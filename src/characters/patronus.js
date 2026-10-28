@@ -1,26 +1,6 @@
-/**
- * patronus.js - Patrono (versao preliminar).
- *
- * Entidade espectral luminosa com forma de cervo, projetada para a frente
- * quando o gesto do feitico e executado corretamente. Como ele e so luz,
- * o material e translucido e emissivo, e o modelo leva uma PointLight
- * prateada no meio do corpo.
- *
- *   group .................... posicao e direcao do feitico
- *    |- body / chest ......... capsula + esfera
- *    |- neck ................. grupo inclinado
- *    |    |- head ............ grupo
- *    |         |- skull ...... esfera
- *    |         |- muzzle ..... cone (focinho)
- *    |         |- ears[2] .... cones
- *    |         |- antlers[2] . galhadas (cilindros ramificados)
- *    |- legs[4] .............. quadril -> canela -> casco
- *    |- tail ................. cone
- *    |- light ................ PointLight
- *
- * Esta e a versao preliminar pedida no enunciado: a forma ja esta montada,
- * mas o galope e a colisao com os Dementadores ainda serao refinados.
- */
+// O Patrono, por enquanto so a forma. E um cervo feito de luz: material
+// translucido com emissive, mais uma luz prateada no meio do corpo. Sai
+// correndo para a frente quando o feitico acerta o gesto.
 
 import * as THREE from 'three';
 
@@ -28,18 +8,19 @@ export class Patronus {
   constructor() {
     this.group = new THREE.Group();
     this.group.name = 'patrono';
-    this.group.visible = false;      // so aparece quando o feitico e lancado
+    this.group.visible = false;    // so aparece quando e conjurado
 
-    // material unico para todo o corpo: translucido e emissivo. O emissive
-    // faz o modelo brilhar mesmo sem luz apontada para ele.
+    // um material para o corpo inteiro. O emissive faz ele brilhar mesmo
+    // sem nenhuma luz apontada, e o depthWrite false evita as partes do
+    // corpo recortarem umas as outras por serem transparentes
     this.material = new THREE.MeshStandardMaterial({
       color: 0xcfe9ff,
       emissive: 0x9fd0ff,
-      emissiveIntensity: 1.2,
+      emissiveIntensity: 1.4,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.5,
       roughness: 0.4,
-      depthWrite: false,             // evita o corpo recortar as proprias partes
+      depthWrite: false,
       side: THREE.DoubleSide,
     });
 
@@ -47,7 +28,7 @@ export class Patronus {
     this.createHead();
     this.createLegs();
 
-    this.light = new THREE.PointLight(0xdcefff, 0, 14);
+    this.light = new THREE.PointLight(0xdcefff, 0, 16);
     this.light.position.y = 1.4;
     this.group.add(this.light);
 
@@ -56,13 +37,9 @@ export class Patronus {
     this.direction = new THREE.Vector3(0, 0, -1);
   }
 
-  /** Tronco, peito e cauda. */
   createBody() {
-    const body = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.42, 0.95, 6, 16),
-      this.material
-    );
-    body.rotation.z = Math.PI / 2;    // capsula deitada = tronco horizontal
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.42, 0.95, 6, 16), this.material);
+    body.rotation.z = Math.PI / 2;   // capsula deitada vira o tronco
     body.position.y = 1.15;
     this.group.add(body);
 
@@ -77,7 +54,6 @@ export class Patronus {
     this.group.add(tail);
   }
 
-  /** Pescoco, cabeca, focinho, orelhas e galhadas. */
   createHead() {
     this.neck = new THREE.Group();
     this.neck.name = 'pescoco';
@@ -95,7 +71,7 @@ export class Patronus {
     this.head = new THREE.Group();
     this.head.name = 'cabeca';
     this.head.position.y = 0.75;
-    this.head.rotation.x = 0.75;      // desfaz parte da inclinacao do pescoco
+    this.head.rotation.x = 0.75;   // desfaz parte da inclinacao do pescoco
     this.neck.add(this.head);
 
     const skull = new THREE.Mesh(new THREE.SphereGeometry(0.17, 14, 12), this.material);
@@ -117,11 +93,8 @@ export class Patronus {
     }
   }
 
-  /**
-   * Galhada: uma haste principal inclinada para fora e tres pontas menores
-   * saindo dela em alturas diferentes.
-   * @param {number} side -1 para a galhada esquerda, +1 para a direita
-   */
+  // Uma haste inclinada para fora e tres pontas saindo dela, cada uma mais
+  // curta que a anterior.
   createAntler(side) {
     const antler = new THREE.Group();
     antler.name = side < 0 ? 'galhada-esquerda' : 'galhada-direita';
@@ -136,13 +109,14 @@ export class Patronus {
     beam.position.y = 0.21;
     antler.add(beam);
 
-    // tres pontas ao longo da haste, cada uma mais curta que a anterior
     const tines = [
       { height: 0.1, length: 0.2, angle: 0.8 },
       { height: 0.24, length: 0.17, angle: 0.6 },
       { height: 0.38, length: 0.13, angle: 0.4 },
     ];
+
     for (const tine of tines) {
+      // um grupo por ponta so para poder girar a ponta a partir da base
       const pivot = new THREE.Group();
       pivot.position.y = tine.height;
       pivot.rotation.z = side * tine.angle;
@@ -159,11 +133,10 @@ export class Patronus {
     return antler;
   }
 
-  /** Quatro pernas: quadril -> coxa, joelho -> canela, casco. */
   createLegs() {
     this.legs = [];
 
-    // posicoes dos quadris: z positivo = traseiras, z negativo = dianteiras
+    // z positivo = pernas de tras, z negativo = da frente
     const hips = [
       [-0.26, 0.55], [0.26, 0.55],
       [-0.26, -0.5], [0.26, -0.5],
@@ -174,10 +147,7 @@ export class Patronus {
       hip.position.set(x, 0.95, z);
       this.group.add(hip);
 
-      const thigh = new THREE.Mesh(
-        new THREE.CapsuleGeometry(0.07, 0.4, 3, 8),
-        this.material
-      );
+      const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.4, 3, 8), this.material);
       thigh.position.y = -0.2;
       hip.add(thigh);
 
@@ -185,10 +155,7 @@ export class Patronus {
       knee.position.y = -0.42;
       hip.add(knee);
 
-      const shin = new THREE.Mesh(
-        new THREE.CapsuleGeometry(0.045, 0.42, 3, 8),
-        this.material
-      );
+      const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.42, 3, 8), this.material);
       shin.position.y = -0.21;
       knee.add(shin);
 
@@ -197,17 +164,11 @@ export class Patronus {
       hoof.rotation.x = Math.PI;
       knee.add(hoof);
 
-      // pernas dianteiras e traseiras em contrafase, como num galope
+      // frente e tras em contrafase, senao parece um coelho pulando
       this.legs.push({ hip, knee, phase: z > 0 ? 0 : Math.PI });
     }
   }
 
-  /**
-   * Lanca o Patrono a partir de um ponto, correndo numa direcao.
-   * @param {THREE.Vector3} origin   de onde ele parte (ponta da varinha)
-   * @param {THREE.Vector3} direction para onde corre
-   * @param {number} duration segundos de duracao do feitico
-   */
   cast(origin, direction, duration = 2.2) {
     this.group.visible = true;
     this.timer = duration;
@@ -216,7 +177,7 @@ export class Patronus {
     this.group.position.set(origin.x, 0, origin.z);
     this.direction.copy(direction).setY(0).normalize();
 
-    // o modelo foi montado olhando para -Z, por isso o Math.PI
+    // o modelo foi montado olhando para -Z, dai o Math.PI
     this.group.rotation.y = Math.atan2(this.direction.x, this.direction.z) + Math.PI;
   }
 
@@ -230,14 +191,14 @@ export class Patronus {
       return;
     }
 
-    // fracao restante do feitico: usada para desvanecer no final
     const remaining = this.timer / this.duration;
 
     this.group.position.addScaledVector(this.direction, delta * 7.5);
-    this.group.position.y = Math.abs(Math.sin(time * 9)) * 0.2;   // saltos
+    this.group.position.y = Math.abs(Math.sin(time * 9)) * 0.2;   // galope
 
-    this.material.opacity = 0.5 * Math.min(1, remaining * 2.2);
-    this.light.intensity = 9 * Math.min(1, remaining * 2.5);
+    // desaparece no final do feitico
+    this.material.opacity = 0.55 * Math.min(1, remaining * 2.2);
+    this.light.intensity = 60 * Math.min(1, remaining * 2.5);
 
     for (const leg of this.legs) {
       leg.hip.rotation.x = Math.sin(time * 9 + leg.phase) * 0.6;
