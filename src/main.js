@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { createWoodTexture, createShroudAlphaTexture, createSparkTexture } from './core/textures.js';
+import { createWoodTexture, createShroudAlphaTexture } from './core/textures.js';
 import { Conjurer } from './characters/conjurer.js';
 import { Dementor } from './characters/dementor.js';
 import { Patronus } from './characters/patronus.js';
@@ -61,7 +61,7 @@ for (const x of [-5, 5]) {
 
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(30, 30),
-  new THREE.MeshStandardMaterial({ color: 0x4a4c57, roughness: 0.95 })
+  new THREE.MeshStandardMaterial({ color: 0x4a4c57, roughness: 1 })
 );
 floor.name = 'chao';
 floor.rotation.x = -Math.PI / 2;   // o plano nasce em pe, entao deitamos ele
@@ -76,11 +76,10 @@ scene.add(helpers);
 
 const woodTexture = createWoodTexture();
 const shroudAlpha = createShroudAlphaTexture();
-const sparkTexture = createSparkTexture();
 
 // No jogo o rig do Conjurador vai ser filho da camera. Aqui ele fica
 // parado no mundo so para dar para girar em volta e inspecionar.
-const conjurer = new Conjurer(woodTexture, sparkTexture);
+const conjurer = new Conjurer(woodTexture);
 const conjurerStand = new THREE.Group();
 conjurerStand.position.set(-2.4, 1.6, 0);
 conjurerStand.rotation.y = 0.5;

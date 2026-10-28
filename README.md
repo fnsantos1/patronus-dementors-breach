@@ -50,15 +50,17 @@ Depois abra <http://localhost:8000>.
 │   ├── main.js                 # cena, luzes, câmera orbital, loop de render
 │   ├── core/textures.js        # texturas procedurais em <canvas>
 │   └── characters/
-│       ├── conjurer.js         # Conjurador: braço + varinha (13 malhas)
+│       ├── conjurer.js         # Conjurador: braço + varinha (10 malhas)
 │       ├── dementor.js         # Dementador: manto + capuz + braços (20 malhas)
-│       └── patronus.js         # Patrono: cervo espectral (28 malhas)
+│       └── patronus.js         # Patrono: cervo espectral (25 malhas)
 ├── vendor/three/               # Three.js r169 versionado
 └── docs/                       # proposta, capturas de tela e vídeo
 ```
 
 Todos os modelos são **próprios**, construídos por código a partir de
-primitivas do Three.js — não há modelos externos no projeto.
+primitivas do Three.js — não há modelos externos nem arquivos de textura no
+projeto. O acabamento é de propósito tosco: poucos segmentos por primitiva e
+`flatShading` ligado, deixando as facetas à mostra.
 
 ## Status das entregas
 

@@ -55,24 +55,3 @@ export function createShroudAlphaTexture(size = 256) {
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   return texture;
 }
-
-// Bolinha de brilho usada nas particulas da ponta da varinha.
-export function createSparkTexture(size = 64) {
-  const canvas = createCanvas(size);
-  const ctx = canvas.getContext('2d');
-
-  const gradient = ctx.createRadialGradient(
-    size / 2, size / 2, 0,
-    size / 2, size / 2, size / 2
-  );
-  gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-  gradient.addColorStop(0.4, 'rgba(190, 220, 255, 0.5)');
-  gradient.addColorStop(1, 'rgba(140, 180, 255, 0)');
-
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
-}
