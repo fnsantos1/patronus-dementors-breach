@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patronus: The Dementor's Breach - Personagens</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #05050a;
+      color: #cfd8e3;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    canvas { display: block; }
+
+    #hud {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      max-width: 320px;
+      padding: 14px 16px;
+      background: rgba(10, 12, 20, 0.78);
+      border: 1px solid rgba(140, 180, 255, 0.25);
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      pointer-events: none;
+    }
+
+    #hud h1 { font-size: 14px; margin-bottom: 8px; color: #9fd0ff; }
+    #hud kbd {
+      background: rgba(140, 180, 255, 0.15);
+      border: 1px solid rgba(140, 180, 255, 0.3);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 12px;
+    }
+    #hud p + p { margin-top: 4px; }
+    #hud .nota { margin-top: 10px; color: #7c8798; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <h1>Personagens (item 3.1 da proposta)</h1>
+    <p><kbd>1</kbd> Conjurador &nbsp; <kbd>2</kbd> Dementador &nbsp; <kbd>3</kbd> Patrono</p>
+    <p><kbd>0</kbd> ver os tres</p>
+    <p><kbd>Espaço</kbd> conjurar o Patrono</p>
+    <p><kbd>G</kbd> grade e eixos &nbsp; <kbd>L</kbd> malha (wireframe)</p>
+    <p class="nota">Arraste com o mouse para orbitar e use a roda para aproximar.</p>
+  </div>
+
+  <!-- O importmap deixa os modulos escreverem `import ... from 'three'`
+       apontando para a copia da biblioteca em vendor/. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
