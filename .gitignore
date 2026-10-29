@@ -4,3 +4,7 @@ dist/
 *.log
 .vscode/
 .idea/
+
+# instrucoes locais de agentes (nao versionar)
+CLAUDE.md
+.claude/
