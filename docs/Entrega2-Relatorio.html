@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Entrega 2 - Patronus: The Dementor's Breach</title>
+<style>
+  @page { size: A4; margin: 2.5cm 2.4cm; }
+  body {
+    font-family: "Liberation Serif", "Nimbus Roman", "Times New Roman", serif;
+    font-size: 11.5pt; line-height: 1.35; color: #000; margin: 0; text-align: justify;
+  }
+  .instituicao { text-align: center; line-height: 1.45; margin-bottom: 1.8em; }
+  .instituicao .univ { font-variant: small-caps; }
+  .titulo { text-align: center; margin-bottom: 2em; }
+  .titulo .entrega { font-size: 13.5pt; font-weight: bold; }
+  .titulo .jogo { font-size: 12.5pt; font-style: italic; margin-top: .3em; }
+  h2 { font-size: 12pt; margin: 1.2em 0 .45em; page-break-after: avoid; }
+  p { margin: 0 0 .45em; }
+  ul { margin: .15em 0 .5em; padding-left: 1.4em; list-style: none; }
+  li { margin-bottom: .22em; text-indent: -1.1em; }
+  li::before { content: "\2013\00a0"; }
+  code { font-family: "DejaVu Sans Mono", monospace; font-size: 9.5pt; }
+</style>
+</head>
+<body>
+
+<div class="instituicao">
+  <div class="univ">Universidade Federal de São Paulo – UNIFESP</div>
+  <div>Instituto de Ciência e Tecnologia – Campus São José dos Campos</div>
+  <div>Disciplina: Computação Gráfica</div>
+</div>
+
+<div class="titulo">
+  <div class="entrega">Entrega 2: Modelagem 3D e Construção Inicial da Cena</div>
+  <div class="jogo">Patronus: The Dementor's Breach</div>
+</div>
+
+<h2>1. Integrantes do Grupo</h2>
+<ul>
+  <li>Andrey Prado de Oliveira – 168491</li>
+  <li>Diogo José Santos – 168632</li>
+  <li>Fabricio Nascimento dos Santos – 170552</li>
+  <li>João Victor Assaoka Ribeiro – 168863</li>
+  <li>Kauan Domingues de Souza – 170347</li>
+</ul>
+
+<h2>2. Tecnologia Utilizada</h2>
+<p><strong>Three.js r169 sobre WebGL</strong>, em ES Modules nativos, sem etapa
+de compilação. A biblioteca está versionada em <code>vendor/three/</code>, então
+basta servir a pasta e abrir no navegador:
+<code>python3 -m http.server 8000</code>. Código em
+<code>github.com/fnsantos1/patronus-dementors-breach</code>.</p>
+
+<h2>3. Modelagem dos Personagens</h2>
+<p>Os três são modelos próprios, feitos por código: primitivas do Three.js
+agrupadas em <code>THREE.Group</code> encaixados, de modo que girar um grupo
+arrasta tudo abaixo dele. Não há modelo nem imagem externa no projeto.</p>
+<ul>
+  <li><strong>Conjurador</strong> – braço e varinha vistos em primeira pessoa,
+  na hierarquia ombro → cotovelo → mão → varinha, com a luz do feitiço na
+  ponta.</li>
+  <li><strong>Dementador</strong> – manto, capuz vazio e dois braços com garra.
+  O manto é um prisma de base quadrada deformado por um seno aplicado vértice a
+  vértice, o que abre dobras na barra.</li>
+  <li><strong>Patrono</strong> – versão preliminar. Cervo espectral com galhada
+  e pernas divididas em quadril e joelho, de material translúcido e
+  emissivo.</li>
+</ul>
+<p>O acabamento blocado é intencional: as peças são caixas e pirâmides, com
+<code>flatShading</code> nos materiais para deixar as facetas à mostra. As duas
+texturas do projeto — veios de madeira e o recorte em franjas do manto — são
+desenhadas em <code>&lt;canvas&gt;</code> por código.</p>
+
+<h2>4. A Cena 3D</h2>
+<p>A câmara é quadrada, centrada na origem, com 14 × 14 m de piso e 5 m de
+altura. A unidade é o metro e a face do chão está em <code>y = 0</code>, o que
+torna direto posicionar o resto: paredes, teto, colunas nos cantos, tablado
+central, caixotes, uma mesa tombada e tochas de parede. O Conjurador fica no
+centro e os Dementadores entram pelas extremidades, flutuando e virados para o
+meio da sala.</p>
+<p>Como a sala é fechada, a iluminação é toda interna: luz ambiente fria, um
+candelabro no teto, tochas nas paredes e a luz da ponta da varinha. São quatro
+câmeras trocadas por tecla — primeira pessoa, terceira pessoa, zenital e livre.</p>
+<p>Nesta entrega a cena é inteiramente estática: não há animação. A deformação
+do manto é aplicada uma única vez, na montagem do modelo.</p>
+
+<h2>5. Principais Dificuldades</h2>
+<ul>
+  <li>A cena ficou preta: desde o Three.js r155 as luzes usam unidades físicas,
+  e as intensidades que usávamos quase não iluminavam.</li>
+  <li>Ao fechar o teto escureceu de novo, porque a luz principal estava acima
+  dele. Trocamos por iluminação interna, mais coerente com a câmara escura.</li>
+  <li>A deformação do manto acumulava erro a cada quadro; a correção é guardar
+  as posições originais dos vértices e calcular sempre a partir delas.</li>
+</ul>
+
+<h2>6. O Que Ainda Falta</h2>
+<ul>
+  <li>Mecânica do gesto: travar a câmera, vetorizar o movimento do mouse e
+  validar o traçado do feitiço.</li>
+  <li>Animação dos personagens e do feitiço.</li>
+  <li>Ondas de inimigos, pontuação e condições de vitória e derrota.</li>
+  <li>Textura de pedra nas paredes e no chão.</li>
+</ul>
+
+<h2>7. Créditos</h2>
+<ul>
+  <li>Three.js r169 — licença MIT, mrdoob e contribuidores.</li>
+  <li>Dementador e Patrono referenciam o universo de Harry Potter
+  (J. K. Rowling / Warner Bros.); trabalho acadêmico, sem fim comercial.</li>
+  <li>Modelos e texturas feitos pelo grupo.</li>
+</ul>
+
+</body>
+</html>

@@ -34,9 +34,10 @@ Depois abra <http://localhost:8000>.
 
 | Tecla | Ação |
 |---|---|
-| `1` / `2` / `3` | focar Conjurador / Dementador / Patrono |
-| `0` | ver os três juntos |
-| `Espaço` (segurar) | carregar a varinha; ao soltar, dá o clarão |
+| `1` | câmera em 1ª pessoa (o braço vira filho da câmera) |
+| `2` | câmera em 3ª pessoa, sobre o ombro |
+| `3` | câmera zenital |
+| `0` | câmera livre |
 | `G` | mostrar grade e eixos |
 | `L` | alternar wireframe |
 | mouse | orbitar (arrastar) e aproximar (roda) |
@@ -47,12 +48,13 @@ Depois abra <http://localhost:8000>.
 .
 ├── index.html                  # importmap + HUD
 ├── src/
-│   ├── main.js                 # cena, luzes, câmera orbital, loop de render
+│   ├── main.js                 # cena, iluminação, câmeras, loop de render
+│   ├── scene/room.js           # a câmara: chão, paredes, teto, colunas, tochas
 │   ├── core/textures.js        # texturas procedurais em <canvas>
 │   └── characters/
 │       ├── conjurer.js         # Conjurador: braço + varinha (6 malhas)
 │       ├── dementor.js         # Dementador: manto + capuz + braços (11 malhas)
-│       └── patronus.js         # Patrono: cervo espectral (14 malhas)
+│       └── patronus.js         # Patrono: cervo espectral (15 malhas)
 ├── vendor/three/               # Three.js r169 versionado
 └── docs/                       # proposta, capturas de tela e vídeo
 ```
@@ -69,8 +71,8 @@ todas à mostra — a cena inteira tem cerca de 450 triângulos.
 - [x] **Entrega 1** — Proposta do trabalho final (`docs/Entrega1-Proposta.pdf`)
 - [ ] **Entrega 2** — Modelagem 3D e construção inicial da cena
   - [x] Personagens do item 3.1 da proposta (Conjurador, Dementador, Patrono)
-  - [x] Cena mínima para visualização (chão, iluminação, câmera orbital)
-  - [ ] Câmara completa: paredes, teto, obstáculos e tochas
-  - [ ] Câmeras em 1ª pessoa, 3ª pessoa e zenital
+  - [x] Câmara 14 × 14 × 5 m: chão, paredes, teto, colunas, obstáculos e tochas
+  - [x] Iluminação interna: candelabro, tochas e luz da varinha
+  - [x] Câmeras em 1ª pessoa, 3ª pessoa, zenital e livre
+  - [x] Relatório da entrega: [PDF](docs/Entrega2-Relatorio.pdf) e [RELATORIO.md](RELATORIO.md)
   - [ ] Capturas de tela / vídeo em `docs/`
-  - [ ] Relatório da entrega

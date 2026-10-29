@@ -55,11 +55,6 @@ export class Conjurer {
 
     this.buildWand(wood);
 
-    // mira do gesto, de -1 a 1, preenchida pelo main.js enquanto a barra
-    // de espaco esta pressionada
-    this.aimX = 0;
-    this.aimY = 0;
-    this.flashTimer = 0;
   }
 
   buildWand(wood) {
@@ -90,43 +85,14 @@ export class Conjurer {
     );
     this.tip.add(this.glow);
 
-    // principal luz dinamica do jogo
+    // a luz da ponta: fixa nesta entrega
     this.light = new THREE.PointLight(0xaad4ff, 14, 12);
     this.light.castShadow = true;
     this.light.shadow.mapSize.set(512, 512);
     this.tip.add(this.light);
   }
 
-  setAim(x, y) {
-    this.aimX = x;
-    this.aimY = y;
-  }
-
-  flash() {
-    this.flashTimer = 0.4;
-  }
-
-  update(delta, time, casting = false) {
-    // oscilacao lenta para o braco nao ficar completamente imovel
-    const breathe = Math.sin(time * 1.6) * 0.022;
-    const aimX = casting ? this.aimX : 0;
-    const aimY = casting ? this.aimY : 0;
-
-    this.shoulder.rotation.x = -0.55 + breathe + aimY * 0.35;
-    this.shoulder.rotation.y = 0.12 + aimX * 0.45;
-    this.elbow.rotation.x = 0.85 - breathe * 1.5 - aimY * 0.2;
-
-    // a luz pulsa parada, cresce enquanto carrega e estoura no clarao
-    this.light.intensity = 12 + Math.sin(time * 5) * 2
-      + (casting ? 18 : 0) + this.flashTimer * 160;
-    this.glow.scale.setScalar(1 + this.flashTimer * 10);
-
-    if (this.flashTimer > 0) {
-      this.flashTimer = Math.max(0, this.flashTimer - delta);
-    }
-  }
-
-  // de onde o feitico sai
+  // de onde o feitico vai sair
   getTipPosition(target = new THREE.Vector3()) {
     return this.tip.getWorldPosition(target);
   }
