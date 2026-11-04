@@ -69,10 +69,10 @@ todas à mostra — a cena inteira tem cerca de 450 triângulos.
 ## Status das entregas
 
 - [x] **Entrega 1** — Proposta do trabalho final (`docs/Entrega1-Proposta.pdf`)
-- [ ] **Entrega 2** — Modelagem 3D e construção inicial da cena
+- [x] **Entrega 2** — Modelagem 3D e construção inicial da cena
   - [x] Personagens do item 3.1 da proposta (Conjurador, Dementador, Patrono)
   - [x] Câmara 14 × 14 × 5 m: chão, paredes, teto, colunas, obstáculos e tochas
   - [x] Iluminação interna: candelabro, tochas e luz da varinha
   - [x] Câmeras em 1ª pessoa, 3ª pessoa, zenital e livre
   - [x] Relatório da entrega: [PDF](docs/Entrega2-Relatorio.pdf) e [RELATORIO.md](RELATORIO.md)
-  - [ ] Capturas de tela / vídeo em `docs/`
+  - [x] Capturas de tela / vídeo em `docs/`
