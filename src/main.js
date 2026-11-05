@@ -139,10 +139,42 @@ function applyView(view) {
 scene.add(camera);   // a camara precisa estar na cena para carregar o braco
 applyView(views.Digit0);
 
+// Interruptores das luzes da sala: o candelabro e cada tocha tem a sua
+// tecla. Desligar zera a intensidade em vez de esconder a luz - mudar o
+// numero de luzes visiveis obrigaria o Three.js a recompilar os shaders -
+// e escurece o fogo, que e MeshBasicMaterial e pareceria aceso.
+const COR_APAGADA = new THREE.Color(0x2a221c);
+
+function createSwitch(light, flame) {
+  return {
+    light,
+    flame,
+    on: true,
+    intensity: light.intensity,
+    flameColor: flame.color.clone(),
+  };
+}
+
+const lightSwitches = {
+  KeyC: createSwitch(chandelier, room.chandelierFlame),
+};
+const torchKeys = { norte: 'Digit5', sul: 'Digit6', oeste: 'Digit7', leste: 'Digit8' };
+for (const torch of room.torches) {
+  lightSwitches[torchKeys[torch.nome]] = createSwitch(torch.light, torch.flame);
+}
+
+function toggleLight(lightSwitch) {
+  lightSwitch.on = !lightSwitch.on;
+  lightSwitch.light.intensity = lightSwitch.on ? lightSwitch.intensity : 0;
+  lightSwitch.flame.color.copy(lightSwitch.on ? lightSwitch.flameColor : COR_APAGADA);
+}
+
 let wireframe = false;
 
 window.addEventListener('keydown', (event) => {
   if (views[event.code]) applyView(views[event.code]);
+
+  if (lightSwitches[event.code] && !event.repeat) toggleLight(lightSwitches[event.code]);
 
   if (event.code === 'KeyG') helpers.visible = !helpers.visible;
 
