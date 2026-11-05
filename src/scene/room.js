@@ -59,12 +59,12 @@ export function createRoom(woodTexture = null) {
     room.add(mesh);
   }
 
-  const chandelier = addChandelier(room, wood);
+  const { chandelier, chandelierFlame } = addChandelier(room, wood);
   addColumns(room, darkStone);
   addProps(room, wood, darkStone);
   const torches = addTorches(room, wood);
 
-  return { group: room, torches, chandelier };
+  return { group: room, torches, chandelier, chandelierFlame };
 }
 
 // Candelabro pendurado no meio do teto. A luz dele e criada no main.js,
@@ -89,7 +89,9 @@ function addChandelier(room, wood) {
   }
 
   room.add(chandelier);
-  return chandelier;
+  // o material das velas sai junto para o main.js apagar o fogo ao
+  // desligar a luz
+  return { chandelier, chandelierFlame: fogo };
 }
 
 // Quatro colunas, uma por canto, afastadas da parede.
@@ -159,17 +161,18 @@ function addProps(room, wood, stone) {
 }
 
 // Tochas de parede: um suporte de madeira e um bloco aceso com uma luz.
-// Devolve a lista das luzes para o main.js poder fazer o bruxuleio.
+// Devolve, para cada tocha, a luz e a chama, para o main.js poder
+// liga-las, desliga-las e fazer o bruxuleio.
 function addTorches(room, wood) {
-  const lights = [];
+  const torches = [];
   const meio = LARGURA / 2 - ESPESSURA / 2;
 
   // uma tocha no meio de cada parede, a 2,6 m do chao
   const pontos = [
-    { pos: [0, 2.6, -meio], giro: 0 },
-    { pos: [0, 2.6, meio], giro: Math.PI },
-    { pos: [-meio, 2.6, 0], giro: Math.PI / 2 },
-    { pos: [meio, 2.6, 0], giro: -Math.PI / 2 },
+    { nome: 'norte', pos: [0, 2.6, -meio], giro: 0 },
+    { nome: 'sul', pos: [0, 2.6, meio], giro: Math.PI },
+    { nome: 'oeste', pos: [-meio, 2.6, 0], giro: Math.PI / 2 },
+    { nome: 'leste', pos: [meio, 2.6, 0], giro: -Math.PI / 2 },
   ];
 
   for (const ponto of pontos) {
@@ -193,10 +196,10 @@ function addTorches(room, wood) {
     const light = new THREE.PointLight(0xff8c3a, 26, 14);
     light.position.set(0, 0.2, 0.6);
     torch.add(light);
-    lights.push(light);
+    torches.push({ nome: ponto.nome, light, flame: chama.material });
 
     room.add(torch);
   }
 
-  return lights;
+  return torches;
 }

@@ -40,6 +40,8 @@ Depois abra <http://localhost:8000>.
 | `0` | câmera livre |
 | `G` | mostrar grade e eixos |
 | `L` | alternar wireframe |
+| `C` | liga/desliga o candelabro |
+| `5` / `6` / `7` / `8` | liga/desliga a tocha norte / sul / oeste / leste |
 | mouse | orbitar (arrastar) e aproximar (roda) |
 
 ## Estrutura
