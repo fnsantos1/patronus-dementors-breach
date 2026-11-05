@@ -78,3 +78,10 @@ todas à mostra — a cena inteira tem cerca de 450 triângulos.
   - [x] Câmeras em 1ª pessoa, 3ª pessoa, zenital e livre
   - [x] Relatório da entrega: [PDF](docs/Entrega2-Relatorio.pdf) e [RELATORIO.md](RELATORIO.md)
   - [x] Capturas de tela / vídeo em `docs/`
+- [ ] **Entrega 3** — Câmeras, projeção perspectiva e iluminação
+  - [x] Cena integrada com os modelos da Entrega 2
+  - [x] Quatro câmeras alternáveis por tecla
+  - [x] Projeção perspectiva (`PerspectiveCamera` em `src/main.js`)
+  - [x] Liga/desliga individual do candelabro e das tochas
+  - [x] Relatório da entrega: [RELATORIO-Entrega3.md](RELATORIO-Entrega3.md)
+  - [ ] Capturas de tela / vídeo da demonstração em `docs/`
