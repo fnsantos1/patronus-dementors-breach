@@ -55,3 +55,32 @@ export function createShroudAlphaTexture(size = 256) {
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
   return texture;
 }
+
+// Estrela espectral difusa da ponta da varinha:
+// Gradiente radial multicamada suave com centro perolado luminoso, halo celeste translúcido
+// e decaimento exponencial sem facetas geométricas.
+export function createSpectralStarTexture(size = 128) {
+  const canvas = createCanvas(size);
+  const ctx = canvas.getContext('2d');
+  const center = size / 2;
+  const radius = size / 2;
+
+  ctx.clearRect(0, 0, size, size);
+
+  const grad = ctx.createRadialGradient(center, center, 0, center, center, radius);
+  grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+  grad.addColorStop(0.12, 'rgba(230, 245, 255, 0.95)');
+  grad.addColorStop(0.28, 'rgba(145, 210, 255, 0.65)');
+  grad.addColorStop(0.55, 'rgba(55, 145, 255, 0.22)');
+  grad.addColorStop(0.80, 'rgba(20, 80, 220, 0.06)');
+  grad.addColorStop(1.0, 'rgba(0, 40, 180, 0.0)');
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(center, center, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}

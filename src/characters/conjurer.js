@@ -4,9 +4,11 @@
 // cotovelo, logo mexer no ombro move tudo que vem abaixo, luz inclusive.
 
 import * as THREE from 'three';
+import { WandSmokeSystem } from '../core/particles.js';
+import { createSpectralStarTexture } from '../core/textures.js';
 
 export class Conjurer {
-  constructor(woodTexture = null) {
+  constructor(woodTexture = null, particleTexture = null) {
     this.rig = new THREE.Group();
     this.rig.name = 'conjurador';
 
@@ -53,14 +55,13 @@ export class Conjurer {
     fist.castShadow = true;
     this.hand.add(fist);
 
-    this.buildWand(wood);
-
+    this.buildWand(wood, particleTexture);
   }
 
-  buildWand(wood) {
+  buildWand(wood, particleTexture) {
     this.wand = new THREE.Group();
     this.wand.name = 'varinha';
-    this.wand.rotation.x = -1.35;   // deita a varinha para a frente da mao
+    this.wand.rotation.x = -1.35; // deita a varinha para a frente da mao
     this.hand.add(this.wand);
 
     const handle = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.14, 0.042), wood);
@@ -79,17 +80,73 @@ export class Conjurer {
     this.tip.position.y = 0.45;
     this.wand.add(this.tip);
 
-    this.glow = new THREE.Mesh(
-      new THREE.BoxGeometry(0.035, 0.035, 0.035),
-      new THREE.MeshBasicMaterial({ color: 0xdfefff })
-    );
-    this.tip.add(this.glow);
+    // Estrela de luz difusa na ponta da varinha (THREE.Sprite aditivo)
+    const starTexture = createSpectralStarTexture();
+    const starMaterial = new THREE.SpriteMaterial({
+      map: starTexture,
+      color: 0xffffff,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: 0.88,
+    });
+    this.star = new THREE.Sprite(starMaterial);
+    this.star.scale.set(0.08, 0.08, 0.08);
+    this.tip.add(this.star);
 
-    // a luz da ponta: fixa nesta entrega
+    // Mantém compatibilidade com referências a glow
+    this.glow = this.star;
+
+    // A luz da ponta da varinha
     this.light = new THREE.PointLight(0xaad4ff, 14, 12);
     this.light.castShadow = true;
     this.light.shadow.mapSize.set(512, 512);
     this.tip.add(this.light);
+
+    this.charge = 0;
+    this.time = 0;
+
+    // Aura e névoa etérea da Varinha
+    if (particleTexture) {
+      this.particleSystem = new WandSmokeSystem(this.tip, particleTexture);
+    }
+  }
+
+  setMagicCharge(charge) {
+    this.charge = charge;
+
+    if (this.particleSystem) {
+      this.particleSystem.setCharge(charge);
+    }
+    // Luz suave mais etérea e intensa
+    if (this.light) {
+      this.light.intensity = 14 + charge * 20;
+      this.light.distance = 12 + charge * 4;
+    }
+    // Expansão suave e pulso dinâmico da estrela difusa
+    if (this.star) {
+      const baseScale = 0.08 + charge * 0.14; // expande de 0.08m até 0.22m
+      this.star.scale.set(baseScale, baseScale, baseScale);
+      if (this.star.material) {
+        this.star.material.opacity = 0.88 + charge * 0.12;
+      }
+    }
+  }
+
+  update(delta) {
+    this.time += delta;
+
+    if (this.particleSystem) {
+      this.particleSystem.update(delta);
+    }
+
+    // Cintilação sutil e respiração orgânica da estrela espectral
+    if (this.star) {
+      const shimmer = 1.0 + Math.sin(this.time * 7.0) * 0.08;
+      const currentBase = 0.08 + (this.charge || 0) * 0.14;
+      const s = currentBase * shimmer;
+      this.star.scale.set(s, s, s);
+    }
   }
 
   // de onde o feitico vai sair
