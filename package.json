@@ -2,6 +2,10 @@
   "name": "patronus-dementors-breach",
   "version": "1.0.0",
   "type": "module",
-  "description": "Patronus and Dementors Breach - 3D scene with Three.js"
+  "description": "Patronus and Dementors Breach - 3D scene with Three.js",
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/*": "./vendor/three/addons/*"
+  }
 }
 

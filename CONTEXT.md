@@ -55,5 +55,27 @@ _Avoid_: Modo debug, cheat mode
 Estrutura ramificada orgânica do Patrono (cervo), composta por haste principal curvada para trás e múltiplas pontas ascendentes.
 _Avoid_: Chifre reto, antena
 
+**Dementador**:
+Entidade espectral hostil flutuante composta por um esqueleto anatômico sob um véu negro e capuz, que drena a luz e esfria o ambiente da câmara mágica.
+_Avoid_: Zumbi, fantasma simples, monstro genérico, boneco de caixas
+
+**Véu Negro**:
+Manto têxtil esfarrapado e translúcido (`opacity: ~0.85`), com textura de tecido entrecruzada e recorte de franjas, cobrindo o crânio e os ombros do Dementador de forma a entrever a caixa torácica e a ossatura interna.
+_Avoid_: Capa rígida, cortina lisa, armadura
+
+**Arquétipo do Dementador (Flyweight)**:
+Padrão arquitetural que centraliza o estado intrínseco compartilhado entre múltiplos dementadores (geometrias da ossatura 3D, malhas do véu, materiais e texturas procedurais de tecido e corte alfa), enquanto cada Dementador mantém apenas o estado extrínseco (posição espacial, orientação, fase temporal individual e nós de transformação).
+_Avoid_: Duplicação de geometrias e texturas em VRAM, malha única estática sem articulação
+
+**Textura de Tecido**:
+Padrão procedural de entrelaçamento de fios com alto relevo de aspereza (`roughness`) e tonalidade escura de grafite/cinza-chumbo, conferindo acabamento têxtil rústico e desgastado ao capuz e manto do Dementador.
+_Avoid_: Superfície plástica lisa, metal reflexivo
+
+**Aura Fria**:
+Ponto de luz espectral suave azulada (`#3d66cc`) ancorado no tórax do Dementador, com pulsação suave em sincronia com a flutuação, que ilumina internamente as costelas e a cavidade do capuz sem projetar calor.
+_Avoid_: Chama, tocha, luz amarelada/quente, clarão ofuscante
+
+
+
 
 

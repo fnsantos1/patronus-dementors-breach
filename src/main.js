@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { createWoodTexture, createShroudAlphaTexture } from './core/textures.js';
+import { createWoodTexture, createShroudAlphaTexture, createFabricTexture } from './core/textures.js';
 import { createEtherealSmokeTexture } from './core/particles.js';
 import { createRoom, LARGURA, ALTURA } from './scene/room.js';
 import { Conjurer } from './characters/conjurer.js';
@@ -46,6 +46,7 @@ scene.add(chandelier);
 
 const woodTexture = createWoodTexture();
 const shroudAlpha = createShroudAlphaTexture();
+const fabricTexture = createFabricTexture();
 const particleTexture = createEtherealSmokeTexture();
 
 const room = createRoom(woodTexture);
@@ -59,11 +60,11 @@ conjurerStand.rotation.y = Math.PI;
 conjurerStand.add(conjurer.rig);
 scene.add(conjurerStand);
 
-// Dementadores
+// Dementadores (Flyweight com esqueleto anatomico e veu textil)
 const dementors = [
-  new Dementor(shroudAlpha, 0.0),
-  new Dementor(shroudAlpha, 2.1),
-  new Dementor(shroudAlpha, 4.3),
+  new Dementor(shroudAlpha, 0.0, fabricTexture),
+  new Dementor(shroudAlpha, 2.1, fabricTexture),
+  new Dementor(shroudAlpha, 4.3, fabricTexture),
 ];
 dementors[0].setPosition(-4.5, 0.3, -4.0);
 dementors[1].setPosition(4.8, 0.5, -3.0);
@@ -206,9 +207,13 @@ function animate() {
   }
   conjurer.setMagicCharge(magicCharge);
 
-  // Atualizacao dos sistemas de particulas
+  // Atualizacao dos sistemas de particulas e personagens
   conjurer.update(delta);
   patronus.update(delta, camera);
+  const elapsedTime = clock.getElapsedTime();
+  for (const dementor of dementors) {
+    dementor.update(delta, elapsedTime);
+  }
 
   controls.update();
   renderer.render(scene, camera);
