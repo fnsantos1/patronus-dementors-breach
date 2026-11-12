@@ -86,3 +86,14 @@ todas à mostra — a cena inteira tem cerca de 450 triângulos.
   - [x] Relatório da entrega: [docs/Entrega3-Relatorio.pdf](docs/Entrega3-Relatorio.pdf)
   - [x] Vídeo da demonstração técnica: [docs/Demonstracao_Entrega_3.mp4](docs/Demonstracao_Entrega_3.mp4)
   - [x] Índice completo de documentação em [docs/README.md](docs/README.md)
+
+## Texturas
+
+As texturas em `assets/texturas/` são nossas, geradas por
+`tools/gerar-texturas.py`, com duas exceções, ambas em licença CC0 (domínio
+público) e reduzidas para 1024 px:
+
+- paredes (`rocha*.jpg`) — **Rock022**, do [ambientCG](https://ambientcg.com)
+- chão, teto e colunas (`piso*.jpg`) — **Cobblestone Irregular Floor 001**
+- móveis (`tabua*.jpg`) — **Planks024C**, do [ambientCG](https://ambientcg.com)
+- manto dos Dementadores (`couro*.jpg`) — **Leather Armor 002**
