@@ -39,15 +39,27 @@ function rufflePrism(geometry, phase) {
   geometry.computeVertexNormals();
 }
 
+// Numero entre 0 e 1 tirado de uma semente. Deterministico: a cena fica
+// igual a cada carregamento, mas cada Dementador recebe valores proprios.
+function sorteio(semente) {
+  const x = Math.sin(semente * 127.1) * 43758.5453;
+  return x - Math.floor(x);
+}
+
 export class Dementor {
-  constructor(shroudAlpha = null, phase = 0) {
+  constructor(texturas, phase = 0) {
     this.phase = phase;   // muda as dobras do manto de cada Dementador
     this.baseY = 0;
 
     this.group = new THREE.Group();
     this.group.name = 'dementador';
 
-    this.createShroud(shroudAlpha);
+    // cada um fica um pouco diferente do outro: altura, giro e o
+    // enquadramento do couro
+    const altura = 0.92 + sorteio(phase + 1) * 0.22;
+    this.group.scale.set(0.96 + sorteio(phase + 5) * 0.12, altura, 0.96 + sorteio(phase + 9) * 0.12);
+
+    this.createShroud(texturas);
     this.createHood();
 
     this.arms = [this.createArm(-1), this.createArm(1)];
@@ -59,7 +71,7 @@ export class Dementor {
     this.group.add(aura);
   }
 
-  createShroud(shroudAlpha) {
+  createShroud(texturas) {
     // cilindro de 4 lados e sem tampas: uma caixa afunilada, estreita nos
     // ombros e aberta na barra
     const geometry = new THREE.CylinderGeometry(0.5, 1.2, 2.6, 4, 6, true);
@@ -69,9 +81,32 @@ export class Dementor {
     // perfeito; o phase muda o desenho das dobras de cada Dementador
     rufflePrism(geometry, this.phase);
 
+    // couro escuro no corpo do manto; a franja da barra vem do alphaMap.
+    // Os tres canais do couro recebem o mesmo deslocamento, para o relevo
+    // casar com o desenho. O alphaMap fica parado: a franja tem de cair
+    // sempre na barra.
     const material = cloth.clone();
+    const dx = sorteio(this.phase + 2);
+    const dy = sorteio(this.phase + 7) * 0.3;
+
+    const giro = Math.PI / 2 + (sorteio(this.phase + 3) - 0.5) * 0.5;
+
+    for (const canal of ['map', 'normalMap', 'roughnessMap']) {
+      const textura = texturas.couro[canal].clone();
+      textura.center.set(0.5, 0.5);
+      textura.rotation = giro;
+      textura.offset.set(dx, dy);
+      textura.needsUpdate = true;
+      material[canal] = textura;
+    }
+    material.alphaMap = texturas.couro.alphaMap;
+
+    // tom levemente diferente em cada um. setHex le a cor em sRGB, como as
+    // do resto do projeto; o multiplyScalar so escurece ou clareia um pouco.
+    material.color.setHex(0x9aa0b4);
+    material.color.multiplyScalar(0.8 + sorteio(this.phase + 11) * 0.4);
+    material.flatShading = false;
     material.transparent = true;
-    material.alphaMap = shroudAlpha;
     material.alphaTest = 0.5;   // recorta a franja; sem isso ela so desbota
 
     this.shroud = new THREE.Mesh(geometry, material);

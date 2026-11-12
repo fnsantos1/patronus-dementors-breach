@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 
 export class Conjurer {
-  constructor(woodTexture = null) {
+  constructor(texturas) {
     this.rig = new THREE.Group();
     this.rig.name = 'conjurador';
 
@@ -16,7 +16,7 @@ export class Conjurer {
       flatShading: true,
     });
     const wood = new THREE.MeshStandardMaterial({
-      map: woodTexture,
+      ...texturas.madeira,
       roughness: 0.9,
       flatShading: true,
     });
