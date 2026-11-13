@@ -10,28 +10,67 @@ export const LARGURA = 14;   // metros, nos eixos X e Z
 export const ALTURA = 5;     // do chao ao teto
 const ESPESSURA = 0.4;       // das paredes
 
-export function createRoom(woodTexture = null) {
+// Quebra a repeticao da textura: cada peca recebe uma copia do material com
+// a imagem deslocada e, as vezes, virada de cabeca para baixo. Como a copia
+// aponta para a mesma imagem, nao custa memoria nenhuma - muda so o
+// enquadramento. Sem isso as quatro paredes ficam identicas.
+function variar(material, deslocaX, deslocaY, virar = false) {
+  const copia = material.clone();
+
+  for (const canal of ['map', 'normalMap', 'roughnessMap']) {
+    if (!copia[canal]) continue;
+    const textura = copia[canal].clone();
+    textura.offset.set(deslocaX, deslocaY);
+    if (virar) {
+      textura.center.set(0.5, 0.5);
+      textura.rotation = Math.PI;
+    }
+    textura.needsUpdate = true;
+    copia[canal] = textura;
+  }
+
+  return copia;
+}
+
+export function createRoom(texturas) {
   const room = new THREE.Group();
   room.name = 'camara';
 
-  const stone = new THREE.MeshStandardMaterial({
-    color: 0x55565f,
+  // paredes: rocha externa, com relevo e rugosidade
+  const rock = new THREE.MeshStandardMaterial({
+    ...texturas.rocha,
     roughness: 1,
-    flatShading: true,
   });
-  const darkStone = new THREE.MeshStandardMaterial({
-    color: 0x3c3d45,
+  // tablado onde o jogador fica: mesma pedra do chao, na escala da peca
+  const stone = new THREE.MeshStandardMaterial({
+    ...texturas.pisoTablado,
+    color: 0xa8a8ae,
     roughness: 1,
-    flatShading: true,
+  });
+  // teto e colunas: a mesma pedra irregular do chao, so que mais escura
+  const darkStone = new THREE.MeshStandardMaterial({
+    ...texturas.pisoTeto,
+    color: 0x8a8a90,
+    roughness: 1,
+  });
+  const columnStone = new THREE.MeshStandardMaterial({
+    ...texturas.pisoColuna,
+    color: 0x9a9aa0,
+    roughness: 1,
   });
   const wood = new THREE.MeshStandardMaterial({
-    map: woodTexture,
-    roughness: 0.9,
-    flatShading: true,
+    ...texturas.tabua,
+    roughness: 1,
   });
 
-  // chao e teto: caixas achatadas, mais faceis de posicionar que planos
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(LARGURA, ESPESSURA, LARGURA), stone);
+  // chao e teto: caixas achatadas, mais faceis de posicionar que planos.
+  // O piso usa a pedra irregular, com relevo e rugosidade proprios.
+  const chaoMaterial = new THREE.MeshStandardMaterial({
+    ...texturas.piso,
+    roughness: 1,
+  });
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(LARGURA, ESPESSURA, LARGURA), chaoMaterial);
   floor.name = 'chao';
   floor.position.y = -ESPESSURA / 2;   // a face de cima fica em y = 0
   floor.receiveShadow = true;
@@ -51,17 +90,21 @@ export function createRoom(woodTexture = null) {
     { nome: 'parede-leste', pos: [meio, ALTURA / 2, 0], tam: [ESPESSURA, ALTURA, LARGURA] },
   ];
 
-  for (const parede of paredes) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...parede.tam), stone);
+  // deslocamentos escolhidos a dedo, um por parede, para nenhuma repetir a outra
+  const variacoes = [[0, 0, false], [0.37, 0.21, true], [0.64, 0.08, false], [0.19, 0.44, true]];
+
+  paredes.forEach((parede, i) => {
+    const [dx, dy, virar] = variacoes[i];
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...parede.tam), variar(rock, dx, dy, virar));
     mesh.name = parede.nome;
     mesh.position.set(...parede.pos);
     mesh.receiveShadow = true;
     room.add(mesh);
-  }
+  });
 
   const { chandelier, chandelierFlame } = addChandelier(room, wood);
-  addColumns(room, darkStone);
-  addProps(room, wood, darkStone);
+  addColumns(room, columnStone);
+  addProps(room, wood, stone);
   const torches = addTorches(room, wood);
 
   return { group: room, torches, chandelier, chandelierFlame };
@@ -100,7 +143,10 @@ function addColumns(room, material) {
 
   for (const x of [-d, d]) {
     for (const z of [-d, d]) {
-      const column = new THREE.Mesh(new THREE.BoxGeometry(0.7, ALTURA, 0.7), material);
+      const column = new THREE.Mesh(
+        new THREE.BoxGeometry(0.7, ALTURA, 0.7),
+        variar(material, Math.random(), Math.random())
+      );
       column.name = 'coluna';
       column.position.set(x, ALTURA / 2, z);
       column.castShadow = true;
@@ -122,7 +168,7 @@ function addProps(room, wood, stone) {
   for (const caixote of caixotes) {
     const box = new THREE.Mesh(
       new THREE.BoxGeometry(caixote.tam, caixote.tam, caixote.tam),
-      wood
+      variar(wood, Math.random(), Math.random())
     );
     box.name = 'caixote';
     box.position.set(...caixote.pos);

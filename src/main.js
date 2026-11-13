@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { createWoodTexture, createShroudAlphaTexture, createFabricTexture } from './core/textures.js';
+import { carregarTexturas } from './core/textures.js';
 import { createEtherealSmokeTexture } from './core/particles.js';
 import { createRoom, LARGURA, ALTURA } from './scene/room.js';
 import { Conjurer } from './characters/conjurer.js';
@@ -44,16 +44,14 @@ chandelier.shadow.mapSize.set(1024, 1024);
 chandelier.shadow.bias = -0.004;
 scene.add(chandelier);
 
-const woodTexture = createWoodTexture();
-const shroudAlpha = createShroudAlphaTexture();
-const fabricTexture = createFabricTexture();
+const texturas = carregarTexturas();
 const particleTexture = createEtherealSmokeTexture();
 
-const room = createRoom(woodTexture);
+const room = createRoom(texturas);
 scene.add(room.group);
 
 // O Conjurador com sistema de particulas na ponta da varinha
-const conjurer = new Conjurer(woodTexture, particleTexture);
+const conjurer = new Conjurer(texturas, particleTexture);
 const conjurerStand = new THREE.Group();
 conjurerStand.position.set(0, 1.55, 0.6);
 conjurerStand.rotation.y = Math.PI;
@@ -62,9 +60,9 @@ scene.add(conjurerStand);
 
 // Dementadores (Flyweight com esqueleto anatomico e veu textil)
 const dementors = [
-  new Dementor(shroudAlpha, 0.0, fabricTexture),
-  new Dementor(shroudAlpha, 2.1, fabricTexture),
-  new Dementor(shroudAlpha, 4.3, fabricTexture),
+  new Dementor(texturas, 0.0),
+  new Dementor(texturas, 2.1),
+  new Dementor(texturas, 4.3),
 ];
 dementors[0].setPosition(-4.5, 0.3, -4.0);
 dementors[1].setPosition(4.8, 0.5, -3.0);
@@ -156,6 +154,18 @@ function toggleLight(lightSwitch) {
 }
 
 let wireframe = false;
+let uvVisivel = false;
+
+// lista sem repeticao dos materiais que tem textura
+function materiaisTexturizados() {
+  const materiais = [];
+  scene.traverse((object) => {
+    if (object.isMesh && object.material.map && !materiais.includes(object.material)) {
+      materiais.push(object.material);
+    }
+  });
+  return materiais;
+}
 
 // Estado da Conjuracao e Carga Magica
 let isCharging = false;
@@ -168,6 +178,21 @@ window.addEventListener('keydown', (event) => {
 
   if (event.code === 'Space') {
     isCharging = true;
+  }
+
+  // mostra o xadrez de UV no lugar das texturas, para conferir o mapeamento.
+  // Percorre materiais, nao malhas: varias pecas dividem o mesmo material.
+  if (event.code === 'KeyU') {
+    uvVisivel = !uvVisivel;
+    for (const material of materiaisTexturizados()) {
+      if (uvVisivel) {
+        material.userData.mapa = material.map;
+        material.map = texturas.uv;
+      } else {
+        material.map = material.userData.mapa;
+      }
+      material.needsUpdate = true;
+    }
   }
 
   if (event.code === 'KeyL') {

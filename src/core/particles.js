@@ -222,27 +222,97 @@ export class PatronusSmokeSystem {
     }
 
     this.geometry = new THREE.BufferGeometry();
-    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.currentPositions, 3));
-    this.geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.basePositions, 3));
+    this.geometry.setAttribute('aNormal', new THREE.BufferAttribute(this.normals, 3));
+    this.geometry.setAttribute('aOffset', new THREE.BufferAttribute(this.offsets, 3));
+    this.geometry.setAttribute('aLife', new THREE.BufferAttribute(this.lifes, 1));
+    this.geometry.setAttribute('aSpeed', new THREE.BufferAttribute(this.speeds, 1));
+    this.geometry.setAttribute('aPhase', new THREE.BufferAttribute(this.phases, 1));
 
-    // Partículas volumétricas preenchendo o corpo de luz com sobreposição aveludada
-    this.material = new THREE.PointsMaterial({
-      size: 0.22,
-      map: this.texture,
+    // ShaderMaterial: move 100% da simulação térmica, ciclo de vida e Blinn-Phong para a GPU
+    this.material = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uPointSize: { value: 0.22 },
+        uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) },
+        uMap: { value: this.texture },
+        uLightPos: { value: this.lightPosition },
+        uCamPosLocal: { value: new THREE.Vector3(2, 2, 4) },
+        uOpacity: { value: 0.26 },
+      },
+      vertexShader: `
+        attribute vec3 aNormal;
+        attribute vec3 aOffset;
+        attribute float aLife;
+        attribute float aSpeed;
+        attribute float aPhase;
+
+        uniform float uTime;
+        uniform float uPointSize;
+        uniform float uPixelRatio;
+        uniform vec3 uLightPos;
+        uniform vec3 uCamPosLocal;
+
+        varying vec3 vColor;
+        varying float vAlpha;
+
+        void main() {
+          float progress = fract(aLife + uTime * aSpeed);
+          float bellAlpha = sin(progress * 3.14159265);
+
+          float radialDrift = progress * 0.035;
+          float waveX = sin(uTime * 1.5 + aOffset.x + progress * 2.0) * 0.02;
+          float waveZ = cos(uTime * 1.3 + aOffset.z + progress * 2.0) * 0.02;
+          float riseY = progress * 0.14;
+
+          vec3 pos = position + aNormal * radialDrift + vec3(waveX, riseY, waveZ);
+
+          // Blinn-Phong analítico na GPU
+          vec3 L = normalize(uLightPos - pos);
+          vec3 V = normalize(uCamPosLocal - pos);
+          float nDotL = max(0.0, dot(aNormal, L));
+          float diffuse = 0.65 + 0.35 * nDotL;
+
+          vec3 H = normalize(L + V);
+          float nDotH = max(0.0, dot(aNormal, H));
+          float specular = pow(nDotH, 24.0) * 0.70;
+
+          float breath = 0.5 + 0.5 * sin(uTime * 1.6 + aPhase);
+          vec3 sapphire = vec3(0.098, 0.463, 0.824);
+          vec3 celestial = vec3(0.565, 0.792, 0.976);
+          vec3 specColor = vec3(0.922, 0.961, 1.0);
+          vec3 blended = mix(sapphire, celestial, breath);
+
+          vColor = (blended * diffuse + specColor * specular) * bellAlpha;
+          vAlpha = bellAlpha;
+
+          vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+          gl_PointSize = (uPointSize * 300.0 * uPixelRatio) / max(-mvPosition.z, 0.1);
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uMap;
+        uniform float uOpacity;
+
+        varying vec3 vColor;
+        varying float vAlpha;
+
+        void main() {
+          vec4 tex = texture2D(uMap, gl_PointCoord);
+          float alpha = tex.a * uOpacity * vAlpha;
+          if (alpha < 0.002) discard;
+          gl_FragColor = vec4(vColor * tex.rgb, alpha);
+        }
+      `,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      vertexColors: true,
-      opacity: 0.26,
     });
 
     this.points = new THREE.Points(this.geometry, this.material);
 
-    // Vetores temporários reutilizáveis
-    this._p = new THREE.Vector3();
-    this._l = new THREE.Vector3();
-    this._v = new THREE.Vector3();
-    this._h = new THREE.Vector3();
+    // Vetor temporário reutilizável para posição local da câmera
     this._camPosLocal = new THREE.Vector3();
   }
 
@@ -398,84 +468,12 @@ export class PatronusSmokeSystem {
 
   update(delta, camera = null) {
     this.time += delta;
-    const pos = this.geometry.attributes.position.array;
-    const col = this.geometry.attributes.color.array;
-    const t = this.time;
+    this.material.uniforms.uTime.value = this.time;
 
-    // Posição local da câmera em relação ao grupo do patrono para cálculo do vetor de visão
+    // Posição local da câmera em relação ao grupo do patrono para cálculo do vetor de visão na GPU
     if (camera && this.points.parent) {
       this.points.parent.worldToLocal(this._camPosLocal.copy(camera.position));
-    } else {
-      this._camPosLocal.set(2, 2, 4);
+      this.material.uniforms.uCamPosLocal.value.copy(this._camPosLocal);
     }
-
-    const sapphire = new THREE.Color(0x1976d2);
-    const celestial = new THREE.Color(0x90caf9);
-    const specularHighlight = new THREE.Color(0xebf5ff);
-
-    for (let i = 0; i < this.count; i++) {
-      const idx = i * 3;
-      const bx = this.basePositions[idx + 0];
-      const by = this.basePositions[idx + 1];
-      const bz = this.basePositions[idx + 2];
-
-      const nx = this.normals[idx + 0];
-      const ny = this.normals[idx + 1];
-      const nz = this.normals[idx + 2];
-
-      const offX = this.offsets[idx + 0];
-      const offZ = this.offsets[idx + 2];
-      const phase = this.phases[i];
-
-      this.lifes[i] += delta * this.speeds[i];
-      if (this.lifes[i] > 1.0) {
-        this.lifes[i] -= 1.0;
-      }
-      const progress = this.lifes[i];
-      const bellAlpha = Math.sin(progress * Math.PI);
-
-      // Movimento térmico ondulante sutil e ascensão contida para manter o corpo preenchido de luz
-      const radialDrift = progress * 0.035;
-      const waveX = Math.sin(t * 1.5 + offX + progress * 2.0) * 0.02;
-      const waveZ = Math.cos(t * 1.3 + offZ + progress * 2.0) * 0.02;
-      const riseY = progress * 0.14;
-
-      const px = bx + nx * radialDrift + waveX;
-      const py = by + riseY;
-      const pz = bz + nz * radialDrift + waveZ;
-
-      pos[idx + 0] = px;
-      pos[idx + 1] = py;
-      pos[idx + 2] = pz;
-
-      // --- CÁLCULO DE PHONG ANALÍTICO (Suavizado nas bordas) ---
-      // Vetor Luz: do ponto até a luz interna
-      this._p.set(px, py, pz);
-      this._l.copy(this.lightPosition).sub(this._p).normalize();
-
-      // Vetor Visão: do ponto até a câmera
-      this._v.copy(this._camPosLocal).sub(this._p).normalize();
-
-      // Termo Difuso de Phong: amortecido com base ambiente 0.65 para evitar escurecimento de silhuetas
-      const nDotL = Math.max(0, nx * this._l.x + ny * this._l.y + nz * this._l.z);
-      const diffuse = 0.65 + 0.35 * nDotL;
-
-      // Termo Especular de Blinn-Phong: N . H onde H = normalize(L + V)
-      this._h.copy(this._l).add(this._v).normalize();
-      const nDotH = Math.max(0, nx * this._h.x + ny * this._h.y + nz * this._h.z);
-      const specular = Math.pow(nDotH, 24) * 0.70;
-
-      // Respiração mágica alternando entre safira e azul celeste
-      const breath = 0.5 + 0.5 * Math.sin(t * 1.6 + phase);
-      const blended = new THREE.Color().lerpColors(sapphire, celestial, breath);
-
-      // Aplica iluminação difusa + especular perolada ponderada pela curva de vida
-      col[idx + 0] = (blended.r * diffuse + specularHighlight.r * specular) * bellAlpha;
-      col[idx + 1] = (blended.g * diffuse + specularHighlight.g * specular) * bellAlpha;
-      col[idx + 2] = (blended.b * diffuse + specularHighlight.b * specular) * bellAlpha;
-    }
-
-    this.geometry.attributes.position.needsUpdate = true;
-    this.geometry.attributes.color.needsUpdate = true;
   }
 }

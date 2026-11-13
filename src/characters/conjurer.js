@@ -8,7 +8,7 @@ import { WandSmokeSystem } from '../core/particles.js';
 import { createSpectralStarTexture } from '../core/textures.js';
 
 export class Conjurer {
-  constructor(woodTexture = null, particleTexture = null) {
+  constructor(texturas, particleTexture = null) {
     this.rig = new THREE.Group();
     this.rig.name = 'conjurador';
 
@@ -17,8 +17,9 @@ export class Conjurer {
       roughness: 1,
       flatShading: true,
     });
+    const woodTextureProps = texturas?.madeira ? texturas.madeira : (texturas?.map ? texturas : {});
     const wood = new THREE.MeshStandardMaterial({
-      map: woodTexture,
+      ...woodTextureProps,
       roughness: 0.9,
       flatShading: true,
     });
