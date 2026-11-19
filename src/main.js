@@ -50,6 +50,26 @@ const particleTexture = createEtherealSmokeTexture();
 const room = createRoom(texturas);
 scene.add(room.group);
 
+// Grade e eixos de debug (tecla G)
+const helpers = new THREE.Group();
+helpers.add(new THREE.GridHelper(LARGURA, 14, 0x4466aa, 0x223355));
+helpers.add(new THREE.AxesHelper(2));
+helpers.visible = false;
+scene.add(helpers);
+
+// Caixas de colisao dos obstaculos da camara (colunas, caixotes e mesa)
+const PLAYER_RADIUS = 0.35;
+const ROOM_LIMIT = LARGURA / 2 - 0.2 - PLAYER_RADIUS;
+const obstacleBoxes = [];
+room.group.updateMatrixWorld(true);
+for (const child of room.group.children) {
+  if (child.name === 'coluna' || child.name === 'caixote' || child.name === 'mesa-tombada') {
+    const box = new THREE.Box3().setFromObject(child);
+    box.expandByScalar(PLAYER_RADIUS);
+    obstacleBoxes.push(box);
+  }
+}
+
 // O Conjurador com sistema de particulas na ponta da varinha
 const conjurer = new Conjurer(texturas, particleTexture);
 const conjurerStand = new THREE.Group();
@@ -260,7 +280,27 @@ function animate() {
   if (isMoving) {
     const moveDir = new THREE.Vector3(strafeInput, 0, -forwardInput).normalize();
     moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), conjurerStand.rotation.y);
-    conjurerStand.position.addScaledVector(moveDir, MOVE_SPEED * delta);
+
+    const nextX = THREE.MathUtils.clamp(
+      conjurerStand.position.x + moveDir.x * MOVE_SPEED * delta,
+      -ROOM_LIMIT,
+      ROOM_LIMIT
+    );
+    const nextZ = THREE.MathUtils.clamp(
+      conjurerStand.position.z + moveDir.z * MOVE_SPEED * delta,
+      -ROOM_LIMIT,
+      ROOM_LIMIT
+    );
+
+    const canMoveX = !obstacleBoxes.some(
+      (b) => nextX > b.min.x && nextX < b.max.x && conjurerStand.position.z > b.min.z && conjurerStand.position.z < b.max.z
+    );
+    if (canMoveX) conjurerStand.position.x = nextX;
+
+    const canMoveZ = !obstacleBoxes.some(
+      (b) => conjurerStand.position.x > b.min.x && conjurerStand.position.x < b.max.x && nextZ > b.min.z && nextZ < b.max.z
+    );
+    if (canMoveZ) conjurerStand.position.z = nextZ;
   }
 
   // Atualizacao dos sistemas de particulas e personagens
