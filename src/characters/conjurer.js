@@ -65,6 +65,7 @@ export class Conjurer {
     this.buildTorsoAndRobe();
     this.buildHeadAndHood();
     this.buildLeftArm();
+    this.buildLegs();
 
     // ombro: entra na tela de baixo para cima, vindo da direita
     this.shoulder = new THREE.Group();
@@ -347,7 +348,39 @@ export class Conjurer {
     }
   }
 
-  update(delta) {
+  buildLegs() {
+    const { robeCloak, leather } = this.materials;
+
+    const createLeg = (name, x) => {
+      const leg = new THREE.Group();
+      leg.name = name;
+      leg.position.set(x, -0.78, 0);
+
+      const thigh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.38, 0.12), robeCloak);
+      thigh.position.y = -0.19;
+      thigh.castShadow = true;
+      leg.add(thigh);
+
+      const shin = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.32, 0.1), robeCloak);
+      shin.position.y = -0.52;
+      shin.castShadow = true;
+      leg.add(shin);
+
+      const boot = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.18), leather);
+      boot.position.set(0, -0.72, -0.03);
+      boot.castShadow = true;
+      boot.receiveShadow = true;
+      leg.add(boot);
+
+      this.body.add(leg);
+      return leg;
+    };
+
+    this.leftLeg = createLeg('perna-esquerda', -0.1);
+    this.rightLeg = createLeg('perna-direita', 0.1);
+  }
+
+  update(delta, isMoving = false) {
     this.time += delta;
 
     if (this.particleSystem) {
@@ -360,6 +393,24 @@ export class Conjurer {
       const currentBase = 0.08 + (this.charge || 0) * 0.14;
       const s = currentBase * shimmer;
       this.star.scale.set(s, s, s);
+    }
+
+    // Animação sutil de respiração (idle) e caminhada
+    if (this.body) {
+      this.body.position.y = Math.sin(this.time * 2.2) * 0.012;
+    }
+
+    const targetSwing = isMoving ? Math.sin(this.time * 8.0) * 0.45 : 0;
+    const lerpFactor = Math.min(1, delta * 10);
+
+    if (this.leftLeg && this.rightLeg) {
+      this.leftLeg.rotation.x += (targetSwing - this.leftLeg.rotation.x) * lerpFactor;
+      this.rightLeg.rotation.x += (-targetSwing - this.rightLeg.rotation.x) * lerpFactor;
+    }
+
+    if (this.leftShoulder) {
+      const armTarget = 0.18 - targetSwing * 0.6;
+      this.leftShoulder.rotation.x += (armTarget - this.leftShoulder.rotation.x) * lerpFactor;
     }
   }
 
