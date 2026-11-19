@@ -171,7 +171,12 @@ function materiaisTexturizados() {
 let isCharging = false;
 let magicCharge = 0; // 0.0 a 1.0
 
+// Estado de movimentacao WASD
+const moveKeys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+const MOVE_SPEED = 3.5;
+
 window.addEventListener('keydown', (event) => {
+  if (event.code in moveKeys) moveKeys[event.code] = true;
   if (views[event.code]) applyView(views[event.code]);
   if (lightSwitches[event.code] && !event.repeat) toggleLight(lightSwitches[event.code]);
   if (event.code === 'KeyG') helpers.visible = !helpers.visible;
@@ -206,6 +211,7 @@ window.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('keyup', (event) => {
+  if (event.code in moveKeys) moveKeys[event.code] = false;
   if (event.code === 'Space') {
     isCharging = false;
   }
@@ -232,8 +238,19 @@ function animate() {
   }
   conjurer.setMagicCharge(magicCharge);
 
+  // Movimentacao WASD no plano XZ
+  const forwardInput = (moveKeys.KeyW ? 1 : 0) - (moveKeys.KeyS ? 1 : 0);
+  const strafeInput = (moveKeys.KeyD ? 1 : 0) - (moveKeys.KeyA ? 1 : 0);
+  const isMoving = forwardInput !== 0 || strafeInput !== 0;
+
+  if (isMoving) {
+    const moveDir = new THREE.Vector3(strafeInput, 0, -forwardInput).normalize();
+    moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), conjurerStand.rotation.y);
+    conjurerStand.position.addScaledVector(moveDir, MOVE_SPEED * delta);
+  }
+
   // Atualizacao dos sistemas de particulas e personagens
-  conjurer.update(delta);
+  conjurer.update(delta, isMoving);
   patronus.update(delta, camera);
   const elapsedTime = clock.getElapsedTime();
   for (const dementor of dementors) {
