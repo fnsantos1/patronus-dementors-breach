@@ -6,6 +6,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { carregarTexturas } from './core/textures.js';
 import { createEtherealSmokeTexture } from './core/particles.js';
+import { GestureRecognizer } from './core/gestures.js';
+import { SpellManager } from './core/spells.js';
 import { createRoom, LARGURA, ALTURA } from './scene/room.js';
 import { Conjurer } from './characters/conjurer.js';
 import { Dementor } from './characters/dementor.js';
@@ -97,6 +99,26 @@ const patronus = new Patronus(particleTexture);
 patronus.setPosition(3.0, 0, 3.6);
 patronus.group.rotation.y = 2.4;
 scene.add(patronus.group);
+
+// Sistema de magias e reconhecimento de gestos (Circulo, Triangulo, Quadrado)
+const spellManager = new SpellManager(scene, conjurerStand, dementors);
+new GestureRecognizer(
+  (shape) => {
+    const origin = conjurer.getTipPosition();
+    const dir = new THREE.Vector3(0, 0, -1).applyAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      conjurerStand.rotation.y
+    );
+    if (currentViewKey === 'Digit1') {
+      camera.getWorldDirection(dir);
+    }
+    spellManager.cast(shape, origin, dir);
+  },
+  {
+    onStart: () => { isCharging = true; },
+    onEnd: () => { isCharging = false; },
+  }
+);
 
 // Cameras
 const views = {
@@ -303,8 +325,9 @@ function animate() {
     if (canMoveZ) conjurerStand.position.z = nextZ;
   }
 
-  // Atualizacao dos sistemas de particulas e personagens
+  // Atualizacao dos sistemas de particulas, magias e personagens
   conjurer.update(delta, isMoving);
+  spellManager.update(delta);
   patronus.update(delta, camera);
   const elapsedTime = clock.getElapsedTime();
   for (const dementor of dementors) {
