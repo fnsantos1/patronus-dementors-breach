@@ -171,7 +171,7 @@ function applyView(view, key = currentViewKey) {
 }
 
 scene.add(camera);
-applyView(views.Digit0, 'Digit0');
+applyView(views.Digit1, 'Digit1');
 
 // Luzes
 const COR_APAGADA = new THREE.Color(0x2a221c);
