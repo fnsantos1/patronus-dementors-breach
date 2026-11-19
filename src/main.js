@@ -104,9 +104,15 @@ const views = {
   },
 };
 
-function applyView(view) {
+let currentViewKey = 'Digit0';
+let playerYaw = 0;
+let playerPitch = 0;
+
+function applyView(view, key = currentViewKey) {
+  currentViewKey = key;
   camera.position.copy(view.position);
   controls.target.copy(view.target);
+  controls.enabled = key !== 'Digit1' && key !== 'Digit2';
 
   if (view.primeiraPessoa) {
     camera.add(conjurer.rig);
@@ -123,7 +129,7 @@ function applyView(view) {
 }
 
 scene.add(camera);
-applyView(views.Digit0);
+applyView(views.Digit0, 'Digit0');
 
 // Luzes
 const COR_APAGADA = new THREE.Color(0x2a221c);
@@ -177,7 +183,7 @@ const MOVE_SPEED = 3.5;
 
 window.addEventListener('keydown', (event) => {
   if (event.code in moveKeys) moveKeys[event.code] = true;
-  if (views[event.code]) applyView(views[event.code]);
+  if (views[event.code]) applyView(views[event.code], event.code);
   if (lightSwitches[event.code] && !event.repeat) toggleLight(lightSwitches[event.code]);
   if (event.code === 'KeyG') helpers.visible = !helpers.visible;
 
@@ -214,6 +220,14 @@ window.addEventListener('keyup', (event) => {
   if (event.code in moveKeys) moveKeys[event.code] = false;
   if (event.code === 'Space') {
     isCharging = false;
+  }
+});
+
+window.addEventListener('pointermove', (event) => {
+  if ((currentViewKey === 'Digit1' || currentViewKey === 'Digit2') && (event.buttons & 1)) {
+    playerYaw -= event.movementX * 0.004;
+    playerPitch = Math.max(-1.1, Math.min(1.1, playerPitch - event.movementY * 0.004));
+    conjurerStand.rotation.y = playerYaw;
   }
 });
 
@@ -257,7 +271,29 @@ function animate() {
     dementor.update(delta, elapsedTime);
   }
 
-  controls.update();
+  if (currentViewKey === 'Digit1') {
+    camera.position.set(
+      conjurerStand.position.x,
+      conjurerStand.position.y + 0.15,
+      conjurerStand.position.z
+    );
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = playerYaw;
+    camera.rotation.x = playerPitch;
+    camera.rotation.z = 0;
+  } else if (currentViewKey === 'Digit2') {
+    const offset = new THREE.Vector3(0.65, 0.95 - playerPitch * 1.2, 3.2);
+    offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), playerYaw);
+    camera.position.copy(conjurerStand.position).add(offset);
+    camera.lookAt(
+      conjurerStand.position.x,
+      conjurerStand.position.y + 0.1,
+      conjurerStand.position.z
+    );
+  } else {
+    controls.update();
+  }
+
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
