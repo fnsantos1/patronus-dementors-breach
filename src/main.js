@@ -54,7 +54,7 @@ scene.add(room.group);
 const conjurer = new Conjurer(texturas, particleTexture);
 const conjurerStand = new THREE.Group();
 conjurerStand.position.set(0, 1.55, 0.6);
-conjurerStand.rotation.y = Math.PI;
+conjurerStand.rotation.y = 0;
 conjurerStand.add(conjurer.rig);
 scene.add(conjurerStand);
 
@@ -78,7 +78,6 @@ patronus.setPosition(3.0, 0, 3.6);
 patronus.group.rotation.y = 2.4;
 scene.add(patronus.group);
 
-1
 // Cameras
 const views = {
   Digit1: {
@@ -111,7 +110,7 @@ function applyView(view) {
 
   if (view.primeiraPessoa) {
     camera.add(conjurer.rig);
-    conjurer.rig.position.set(0.22, -0.12, -0.35);
+    conjurer.rig.position.set(0, -0.1, -0.35);
     conjurer.rig.rotation.set(0, 0, 0);
   } else {
     conjurerStand.add(conjurer.rig);

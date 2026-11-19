@@ -23,14 +23,45 @@ export class Conjurer {
       roughness: 0.9,
       flatShading: true,
     });
+    const robePrimary = new THREE.MeshStandardMaterial({
+      color: 0x1e2638,
+      roughness: 0.88,
+      flatShading: true,
+    });
+    const robeSecondary = new THREE.MeshStandardMaterial({
+      color: 0x2c3852,
+      roughness: 0.85,
+      flatShading: true,
+    });
+    const robeCloak = new THREE.MeshStandardMaterial({
+      color: 0x151a28,
+      roughness: 0.92,
+      flatShading: true,
+    });
+    const leather = new THREE.MeshStandardMaterial({
+      color: 0x3b2618,
+      roughness: 0.8,
+      flatShading: true,
+    });
+    const gold = new THREE.MeshStandardMaterial({
+      color: 0xd4a84f,
+      roughness: 0.4,
+      metalness: 0.5,
+      flatShading: true,
+    });
+
+    this.materials = { skin, wood, robePrimary, robeSecondary, robeCloak, leather, gold };
+
+    this.buildTorsoAndRobe();
 
     // ombro: entra na tela de baixo para cima, vindo da direita
     this.shoulder = new THREE.Group();
     this.shoulder.name = 'ombro';
+    this.shoulder.position.set(0.22, -0.02, 0);
     this.shoulder.rotation.set(-0.55, 0.12, -0.18);
     this.rig.add(this.shoulder);
 
-    const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.3, 0.13), skin);
+    const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.3, 0.13), robePrimary);
     upperArm.position.y = -0.15;
     upperArm.castShadow = true;
     this.shoulder.add(upperArm);
@@ -41,10 +72,15 @@ export class Conjurer {
     this.elbow.rotation.x = 0.85;
     this.shoulder.add(this.elbow);
 
-    const foreArm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.11), skin);
+    const foreArm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.11), robePrimary);
     foreArm.position.y = -0.13;
     foreArm.castShadow = true;
     this.elbow.add(foreArm);
+
+    const cuff = new THREE.Mesh(new THREE.BoxGeometry(0.125, 0.05, 0.125), robeSecondary);
+    cuff.position.y = -0.24;
+    cuff.castShadow = true;
+    this.elbow.add(cuff);
 
     this.hand = new THREE.Group();
     this.hand.name = 'mao';
@@ -57,6 +93,67 @@ export class Conjurer {
     this.hand.add(fist);
 
     this.buildWand(wood, particleTexture);
+  }
+
+  buildTorsoAndRobe() {
+    const { robePrimary, robeSecondary, robeCloak, leather, gold } = this.materials;
+
+    this.body = new THREE.Group();
+    this.body.name = 'corpo';
+    this.rig.add(this.body);
+
+    const mantle = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.27, 0.14, 6), robeCloak);
+    mantle.position.y = -0.02;
+    mantle.scale.set(1.05, 1, 0.72);
+    mantle.castShadow = true;
+    mantle.receiveShadow = true;
+    this.body.add(mantle);
+
+    const clasp = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 0.03), gold);
+    clasp.position.set(0, -0.04, -0.18);
+    this.body.add(clasp);
+
+    const upperTorso = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.16, 0.4, 6), robePrimary);
+    upperTorso.position.y = -0.22;
+    upperTorso.scale.set(1.0, 1, 0.72);
+    upperTorso.castShadow = true;
+    upperTorso.receiveShadow = true;
+    this.body.add(upperTorso);
+
+    const chestPanel = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.36, 0.04), robeSecondary);
+    chestPanel.position.set(0, -0.22, -0.13);
+    chestPanel.castShadow = true;
+    this.body.add(chestPanel);
+
+    const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.168, 0.172, 0.07, 6), leather);
+    belt.position.y = -0.44;
+    belt.scale.set(1.02, 1, 0.75);
+    belt.castShadow = true;
+    this.body.add(belt);
+
+    const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.03), gold);
+    buckle.position.set(0, -0.44, -0.135);
+    this.body.add(buckle);
+
+    const lowerRobe = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.33, 0.72, 6), robePrimary);
+    lowerRobe.position.y = -0.82;
+    lowerRobe.scale.set(1.0, 1, 0.78);
+    lowerRobe.castShadow = true;
+    lowerRobe.receiveShadow = true;
+    this.body.add(lowerRobe);
+
+    const robeFrontStrip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.03), robeSecondary);
+    robeFrontStrip.position.set(0, -0.82, -0.2);
+    robeFrontStrip.rotation.x = 0.15;
+    robeFrontStrip.castShadow = true;
+    this.body.add(robeFrontStrip);
+
+    const backCloak = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.96, 0.04), robeCloak);
+    backCloak.position.set(0, -0.52, 0.16);
+    backCloak.rotation.x = 0.12;
+    backCloak.castShadow = true;
+    backCloak.receiveShadow = true;
+    this.body.add(backCloak);
   }
 
   buildWand(wood, particleTexture) {
