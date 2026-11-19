@@ -6,6 +6,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import { carregarTexturas } from './core/textures.js';
 import { createEtherealSmokeTexture } from './core/particles.js';
+import { GestureRecognizer } from './core/gestures.js';
+import { SpellManager } from './core/spells.js';
 import { createRoom, LARGURA, ALTURA } from './scene/room.js';
 import { Conjurer } from './characters/conjurer.js';
 import { Dementor } from './characters/dementor.js';
@@ -50,11 +52,31 @@ const particleTexture = createEtherealSmokeTexture();
 const room = createRoom(texturas);
 scene.add(room.group);
 
+// Grade e eixos de debug (tecla G)
+const helpers = new THREE.Group();
+helpers.add(new THREE.GridHelper(LARGURA, 14, 0x4466aa, 0x223355));
+helpers.add(new THREE.AxesHelper(2));
+helpers.visible = false;
+scene.add(helpers);
+
+// Caixas de colisao dos obstaculos da camara (colunas, caixotes e mesa)
+const PLAYER_RADIUS = 0.35;
+const ROOM_LIMIT = LARGURA / 2 - 0.2 - PLAYER_RADIUS;
+const obstacleBoxes = [];
+room.group.updateMatrixWorld(true);
+for (const child of room.group.children) {
+  if (child.name === 'coluna' || child.name === 'caixote' || child.name === 'mesa-tombada') {
+    const box = new THREE.Box3().setFromObject(child);
+    box.expandByScalar(PLAYER_RADIUS);
+    obstacleBoxes.push(box);
+  }
+}
+
 // O Conjurador com sistema de particulas na ponta da varinha
 const conjurer = new Conjurer(texturas, particleTexture);
 const conjurerStand = new THREE.Group();
 conjurerStand.position.set(0, 1.55, 0.6);
-conjurerStand.rotation.y = Math.PI;
+conjurerStand.rotation.y = 0;
 conjurerStand.add(conjurer.rig);
 scene.add(conjurerStand);
 
@@ -78,7 +100,26 @@ patronus.setPosition(3.0, 0, 3.6);
 patronus.group.rotation.y = 2.4;
 scene.add(patronus.group);
 
-1
+// Sistema de magias e reconhecimento de gestos (Circulo, Triangulo, Quadrado)
+const spellManager = new SpellManager(scene, conjurerStand, dementors);
+new GestureRecognizer(
+  (shape) => {
+    const origin = conjurer.getTipPosition();
+    const dir = new THREE.Vector3(0, 0, -1).applyAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      conjurerStand.rotation.y
+    );
+    if (currentViewKey === 'Digit1') {
+      camera.getWorldDirection(dir);
+    }
+    spellManager.cast(shape, origin, dir);
+  },
+  {
+    onStart: () => { isCharging = true; },
+    onEnd: () => { isCharging = false; },
+  }
+);
+
 // Cameras
 const views = {
   Digit1: {
@@ -105,25 +146,32 @@ const views = {
   },
 };
 
-function applyView(view) {
+let currentViewKey = 'Digit0';
+let playerYaw = 0;
+let playerPitch = 0;
+
+function applyView(view, key = currentViewKey) {
+  currentViewKey = key;
   camera.position.copy(view.position);
   controls.target.copy(view.target);
+  controls.enabled = key !== 'Digit1' && key !== 'Digit2';
 
   if (view.primeiraPessoa) {
     camera.add(conjurer.rig);
-    conjurer.rig.position.set(0.22, -0.12, -0.35);
+    conjurer.rig.position.set(0, -0.1, -0.35);
     conjurer.rig.rotation.set(0, 0, 0);
   } else {
     conjurerStand.add(conjurer.rig);
     conjurer.rig.position.set(0, 0, 0);
   }
+  conjurer.setFirstPerson(Boolean(view.primeiraPessoa));
 
   room.chandelier.visible = !view.semCandelabro;
   document.getElementById('camera-atual').textContent = view.nome;
 }
 
 scene.add(camera);
-applyView(views.Digit0);
+applyView(views.Digit1, 'Digit1');
 
 // Luzes
 const COR_APAGADA = new THREE.Color(0x2a221c);
@@ -171,8 +219,13 @@ function materiaisTexturizados() {
 let isCharging = false;
 let magicCharge = 0; // 0.0 a 1.0
 
+// Estado de movimentacao WASD
+const moveKeys = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+const MOVE_SPEED = 3.5;
+
 window.addEventListener('keydown', (event) => {
-  if (views[event.code]) applyView(views[event.code]);
+  if (event.code in moveKeys) moveKeys[event.code] = true;
+  if (views[event.code]) applyView(views[event.code], event.code);
   if (lightSwitches[event.code] && !event.repeat) toggleLight(lightSwitches[event.code]);
   if (event.code === 'KeyG') helpers.visible = !helpers.visible;
 
@@ -206,8 +259,17 @@ window.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('keyup', (event) => {
+  if (event.code in moveKeys) moveKeys[event.code] = false;
   if (event.code === 'Space') {
     isCharging = false;
+  }
+});
+
+window.addEventListener('pointermove', (event) => {
+  if ((currentViewKey === 'Digit1' || currentViewKey === 'Digit2') && (event.buttons & 1)) {
+    playerYaw -= event.movementX * 0.004;
+    playerPitch = Math.max(-1.1, Math.min(1.1, playerPitch - event.movementY * 0.004));
+    conjurerStand.rotation.y = playerYaw;
   }
 });
 
@@ -232,15 +294,69 @@ function animate() {
   }
   conjurer.setMagicCharge(magicCharge);
 
-  // Atualizacao dos sistemas de particulas e personagens
-  conjurer.update(delta);
+  // Movimentacao WASD no plano XZ
+  const forwardInput = (moveKeys.KeyW ? 1 : 0) - (moveKeys.KeyS ? 1 : 0);
+  const strafeInput = (moveKeys.KeyD ? 1 : 0) - (moveKeys.KeyA ? 1 : 0);
+  const isMoving = forwardInput !== 0 || strafeInput !== 0;
+
+  if (isMoving) {
+    const moveDir = new THREE.Vector3(strafeInput, 0, -forwardInput).normalize();
+    moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), conjurerStand.rotation.y);
+
+    const nextX = THREE.MathUtils.clamp(
+      conjurerStand.position.x + moveDir.x * MOVE_SPEED * delta,
+      -ROOM_LIMIT,
+      ROOM_LIMIT
+    );
+    const nextZ = THREE.MathUtils.clamp(
+      conjurerStand.position.z + moveDir.z * MOVE_SPEED * delta,
+      -ROOM_LIMIT,
+      ROOM_LIMIT
+    );
+
+    const canMoveX = !obstacleBoxes.some(
+      (b) => nextX > b.min.x && nextX < b.max.x && conjurerStand.position.z > b.min.z && conjurerStand.position.z < b.max.z
+    );
+    if (canMoveX) conjurerStand.position.x = nextX;
+
+    const canMoveZ = !obstacleBoxes.some(
+      (b) => conjurerStand.position.x > b.min.x && conjurerStand.position.x < b.max.x && nextZ > b.min.z && nextZ < b.max.z
+    );
+    if (canMoveZ) conjurerStand.position.z = nextZ;
+  }
+
+  // Atualizacao dos sistemas de particulas, magias e personagens
+  conjurer.update(delta, isMoving);
+  spellManager.update(delta);
   patronus.update(delta, camera);
   const elapsedTime = clock.getElapsedTime();
   for (const dementor of dementors) {
     dementor.update(delta, elapsedTime);
   }
 
-  controls.update();
+  if (currentViewKey === 'Digit1') {
+    camera.position.set(
+      conjurerStand.position.x,
+      conjurerStand.position.y + 0.15,
+      conjurerStand.position.z
+    );
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = playerYaw;
+    camera.rotation.x = playerPitch;
+    camera.rotation.z = 0;
+  } else if (currentViewKey === 'Digit2') {
+    const offset = new THREE.Vector3(0.65, 0.95 - playerPitch * 1.2, 3.2);
+    offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), playerYaw);
+    camera.position.copy(conjurerStand.position).add(offset);
+    camera.lookAt(
+      conjurerStand.position.x,
+      conjurerStand.position.y + 0.1,
+      conjurerStand.position.z
+    );
+  } else {
+    controls.update();
+  }
+
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
