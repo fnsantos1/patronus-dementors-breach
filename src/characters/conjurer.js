@@ -49,10 +49,22 @@ export class Conjurer {
       metalness: 0.5,
       flatShading: true,
     });
+    const hair = new THREE.MeshStandardMaterial({
+      color: 0x2a1d15,
+      roughness: 0.9,
+      flatShading: true,
+    });
+    const eye = new THREE.MeshStandardMaterial({
+      color: 0x1a2230,
+      roughness: 0.4,
+      flatShading: true,
+    });
 
-    this.materials = { skin, wood, robePrimary, robeSecondary, robeCloak, leather, gold };
+    this.materials = { skin, wood, robePrimary, robeSecondary, robeCloak, leather, gold, hair, eye };
 
     this.buildTorsoAndRobe();
+    this.buildHeadAndHood();
+    this.buildLeftArm();
 
     // ombro: entra na tela de baixo para cima, vindo da direita
     this.shoulder = new THREE.Group();
@@ -154,6 +166,110 @@ export class Conjurer {
     backCloak.castShadow = true;
     backCloak.receiveShadow = true;
     this.body.add(backCloak);
+  }
+
+  buildHeadAndHood() {
+    const { skin, robePrimary, robeSecondary, robeCloak, hair, eye } = this.materials;
+
+    this.head = new THREE.Group();
+    this.head.name = 'cabeca';
+    this.head.position.set(0, 0.05, 0);
+    this.body.add(this.head);
+
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.075, 0.1, 6), skin);
+    neck.position.set(0, 0.04, 0);
+    neck.castShadow = true;
+    this.head.add(neck);
+
+    const cranium = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.21, 0.18), skin);
+    cranium.position.set(0, 0.17, -0.01);
+    cranium.castShadow = true;
+    this.head.add(cranium);
+
+    const leftEye = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.025, 0.02), eye);
+    leftEye.position.set(-0.045, 0.18, -0.102);
+    this.head.add(leftEye);
+
+    const rightEye = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.025, 0.02), eye);
+    rightEye.position.set(0.045, 0.18, -0.102);
+    this.head.add(rightEye);
+
+    const hairBrow = new THREE.Mesh(new THREE.BoxGeometry(0.186, 0.045, 0.06), hair);
+    hairBrow.position.set(0, 0.25, -0.08);
+    hairBrow.castShadow = true;
+    this.head.add(hairBrow);
+
+    const hoodRoof = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.25), robeCloak);
+    hoodRoof.position.set(0, 0.29, -0.01);
+    hoodRoof.rotation.x = 0.08;
+    hoodRoof.castShadow = true;
+    this.head.add(hoodRoof);
+
+    const hoodBack = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.26, 0.06), robeCloak);
+    hoodBack.position.set(0, 0.17, 0.09);
+    hoodBack.castShadow = true;
+    this.head.add(hoodBack);
+
+    const hoodLeft = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.25, 0.23), robeCloak);
+    hoodLeft.position.set(-0.105, 0.17, 0);
+    hoodLeft.castShadow = true;
+    this.head.add(hoodLeft);
+
+    const hoodRight = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.25, 0.23), robeCloak);
+    hoodRight.position.set(0.105, 0.17, 0);
+    hoodRight.castShadow = true;
+    this.head.add(hoodRight);
+
+    const hoodTrim = new THREE.Mesh(new THREE.BoxGeometry(0.245, 0.03, 0.04), robeSecondary);
+    hoodTrim.position.set(0, 0.29, -0.12);
+    this.head.add(hoodTrim);
+
+    const hoodPeak = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.22, 4), robeCloak);
+    hoodPeak.position.set(0, 0.25, 0.16);
+    hoodPeak.rotation.x = -0.85;
+    hoodPeak.rotation.y = Math.PI / 4;
+    hoodPeak.castShadow = true;
+    this.head.add(hoodPeak);
+  }
+
+  buildLeftArm() {
+    const { skin, robePrimary, robeSecondary } = this.materials;
+
+    this.leftShoulder = new THREE.Group();
+    this.leftShoulder.name = 'ombro-esquerdo';
+    this.leftShoulder.position.set(-0.22, -0.02, 0);
+    this.leftShoulder.rotation.set(0.18, 0, 0.14);
+    this.body.add(this.leftShoulder);
+
+    const leftUpperArm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.3, 0.13), robePrimary);
+    leftUpperArm.position.y = -0.15;
+    leftUpperArm.castShadow = true;
+    this.leftShoulder.add(leftUpperArm);
+
+    this.leftElbow = new THREE.Group();
+    this.leftElbow.name = 'cotovelo-esquerdo';
+    this.leftElbow.position.y = -0.29;
+    this.leftElbow.rotation.x = 0.38;
+    this.leftShoulder.add(this.leftElbow);
+
+    const leftForeArm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.26, 0.11), robePrimary);
+    leftForeArm.position.y = -0.13;
+    leftForeArm.castShadow = true;
+    this.leftElbow.add(leftForeArm);
+
+    const leftCuff = new THREE.Mesh(new THREE.BoxGeometry(0.125, 0.05, 0.125), robeSecondary);
+    leftCuff.position.y = -0.24;
+    leftCuff.castShadow = true;
+    this.leftElbow.add(leftCuff);
+
+    this.leftHand = new THREE.Group();
+    this.leftHand.name = 'mao-esquerda';
+    this.leftHand.position.y = -0.27;
+    this.leftElbow.add(this.leftHand);
+
+    const leftFist = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.11, 0.13), skin);
+    leftFist.castShadow = true;
+    this.leftHand.add(leftFist);
   }
 
   buildWand(wood, particleTexture) {
