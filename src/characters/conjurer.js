@@ -70,8 +70,8 @@ export class Conjurer {
     // ombro: entra na tela de baixo para cima, vindo da direita
     this.shoulder = new THREE.Group();
     this.shoulder.name = 'ombro';
-    this.shoulder.position.set(0.22, -0.02, 0);
-    this.shoulder.rotation.set(-0.55, 0.12, -0.18);
+    this.shoulder.position.set(0.24, -0.02, 0);
+    this.shoulder.rotation.set(-0.55, 0.12, 0.12);
     this.rig.add(this.shoulder);
 
     const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.3, 0.13), robePrimary);
@@ -396,8 +396,12 @@ export class Conjurer {
     }
 
     // Animação sutil de respiração (idle) e caminhada
+    const breathY = Math.sin(this.time * 2.2) * 0.012;
     if (this.body) {
-      this.body.position.y = Math.sin(this.time * 2.2) * 0.012;
+      this.body.position.y = breathY;
+    }
+    if (this.shoulder) {
+      this.shoulder.position.y = -0.02 + breathY;
     }
 
     const targetSwing = isMoving ? Math.sin(this.time * 8.0) * 0.45 : 0;
@@ -411,6 +415,12 @@ export class Conjurer {
     if (this.leftShoulder) {
       const armTarget = 0.18 - targetSwing * 0.6;
       this.leftShoulder.rotation.x += (armTarget - this.leftShoulder.rotation.x) * lerpFactor;
+    }
+  }
+
+  setFirstPerson(enabled) {
+    if (this.body) {
+      this.body.visible = !enabled;
     }
   }
 

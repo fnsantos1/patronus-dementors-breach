@@ -116,6 +116,7 @@ function applyView(view) {
     conjurerStand.add(conjurer.rig);
     conjurer.rig.position.set(0, 0, 0);
   }
+  conjurer.setFirstPerson(Boolean(view.primeiraPessoa));
 
   room.chandelier.visible = !view.semCandelabro;
   document.getElementById('camera-atual').textContent = view.nome;
