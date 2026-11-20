@@ -105,6 +105,14 @@ export class GestureRecognizer {
     const height = maxY - minY;
     if (Math.max(width, height) < 40 || totalLen < 80) return null;
 
+    // 0. Checa linha reta (Dash): distancia ponta-a-ponta proxima do comprimento total
+    const start = pts[0];
+    const end = pts[pts.length - 1];
+    const directDist = Math.hypot(end.x - start.x, end.y - start.y);
+    if (directDist / totalLen > 0.88) {
+      return 'line';
+    }
+
     // 1. Checa circularidade (variancia da distancia ao centroide)
     const cx = (minX + maxX) / 2;
     const cy = (minY + maxY) / 2;

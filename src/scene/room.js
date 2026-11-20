@@ -6,7 +6,7 @@
 
 import * as THREE from 'three';
 
-export const LARGURA = 14;   // metros, nos eixos X e Z
+export const LARGURA = 28;   // metros, nos eixos X e Z
 export const ALTURA = 5;     // do chao ao teto
 const ESPESSURA = 0.4;       // das paredes
 

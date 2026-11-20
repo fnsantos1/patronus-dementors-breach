@@ -88,11 +88,13 @@ let score = 0;
 
 function spawnWave(wave) {
   const count = 2 + wave;
-  const radius = LARGURA / 2 - 1.5;
+  const radius = LARGURA / 2 - 2.0;
+  const aiTypes = ['chaser', 'keeper', 'flanker'];
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * Math.PI * 2 + wave * 0.6;
     const dementor = new Dementor(texturas, i * 1.7);
     dementor.hp = 2;
+    dementor.aiType = aiTypes[i % aiTypes.length];
     dementor.setPosition(Math.cos(angle) * radius, 0.35, Math.sin(angle) * radius);
     dementor.lookAtPoint(conjurerStand.position);
     scene.add(dementor.group);
@@ -108,13 +110,36 @@ patronus.setPosition(3.0, 0, 3.6);
 patronus.group.rotation.y = 2.4;
 scene.add(patronus.group);
 
-// Sistema de magias e reconhecimento de gestos (Circulo, Triangulo, Quadrado)
+// Funcao auxiliar de movimento com colisao
+function moveConjurer(deltaVec) {
+  const nextX = THREE.MathUtils.clamp(
+    conjurerStand.position.x + deltaVec.x,
+    -ROOM_LIMIT,
+    ROOM_LIMIT
+  );
+  const nextZ = THREE.MathUtils.clamp(
+    conjurerStand.position.z + deltaVec.z,
+    -ROOM_LIMIT,
+    ROOM_LIMIT
+  );
+
+  const canMoveX = !obstacleBoxes.some(
+    (b) => nextX > b.min.x && nextX < b.max.x && conjurerStand.position.z > b.min.z && conjurerStand.position.z < b.max.z
+  );
+  if (canMoveX) conjurerStand.position.x = nextX;
+
+  const canMoveZ = !obstacleBoxes.some(
+    (b) => conjurerStand.position.x > b.min.x && conjurerStand.position.x < b.max.x && nextZ > b.min.z && nextZ < b.max.z
+  );
+  if (canMoveZ) conjurerStand.position.z = nextZ;
+}
+
+// Sistema de magias e reconhecimento de gestos (Circulo, Triangulo, Quadrado, Linha/Dash)
 const spellManager = new SpellManager(scene, conjurerStand, dementors, () => {
   score += 100;
 });
 new GestureRecognizer(
   (shape) => {
-    const origin = conjurer.getTipPosition();
     const dir = new THREE.Vector3(0, 0, -1).applyAxisAngle(
       new THREE.Vector3(0, 1, 0),
       conjurerStand.rotation.y
@@ -122,6 +147,12 @@ new GestureRecognizer(
     if (currentViewKey === 'Digit1') {
       camera.getWorldDirection(dir);
     }
+    if (shape === 'line') {
+      const dashVec = dir.clone().setY(0).normalize().multiplyScalar(3.5);
+      moveConjurer(dashVec);
+      return;
+    }
+    const origin = conjurer.getTipPosition();
     spellManager.cast(shape, origin, dir);
   },
   {
@@ -312,27 +343,7 @@ function animate() {
   if (isMoving) {
     const moveDir = new THREE.Vector3(strafeInput, 0, -forwardInput).normalize();
     moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), conjurerStand.rotation.y);
-
-    const nextX = THREE.MathUtils.clamp(
-      conjurerStand.position.x + moveDir.x * MOVE_SPEED * delta,
-      -ROOM_LIMIT,
-      ROOM_LIMIT
-    );
-    const nextZ = THREE.MathUtils.clamp(
-      conjurerStand.position.z + moveDir.z * MOVE_SPEED * delta,
-      -ROOM_LIMIT,
-      ROOM_LIMIT
-    );
-
-    const canMoveX = !obstacleBoxes.some(
-      (b) => nextX > b.min.x && nextX < b.max.x && conjurerStand.position.z > b.min.z && conjurerStand.position.z < b.max.z
-    );
-    if (canMoveX) conjurerStand.position.x = nextX;
-
-    const canMoveZ = !obstacleBoxes.some(
-      (b) => conjurerStand.position.x > b.min.x && conjurerStand.position.x < b.max.x && nextZ > b.min.z && nextZ < b.max.z
-    );
-    if (canMoveZ) conjurerStand.position.z = nextZ;
+    moveConjurer(moveDir.multiplyScalar(MOVE_SPEED * delta));
   }
 
   // Atualizacao dos sistemas de particulas, magias e personagens
@@ -348,9 +359,23 @@ function animate() {
       conjurerStand.position.z - dementor.group.position.z
     );
     const dist = toPlayer.length();
-    if (dist > 0.9) {
+    if (dist > 0.01) {
       toPlayer.normalize();
-      dementor.group.position.addScaledVector(toPlayer, dementorSpeed * delta);
+      if (dementor.aiType === 'keeper') {
+        if (dist > 5.5) {
+          dementor.group.position.addScaledVector(toPlayer, dementorSpeed * delta);
+        } else if (dist < 3.5) {
+          dementor.group.position.addScaledVector(toPlayer, -dementorSpeed * 0.8 * delta);
+        }
+      } else if (dementor.aiType === 'flanker') {
+        const side = new THREE.Vector3(-toPlayer.z, 0, toPlayer.x);
+        const flankDir = toPlayer.clone().multiplyScalar(0.75).addScaledVector(side, 0.65).normalize();
+        if (dist > 0.9) {
+          dementor.group.position.addScaledVector(flankDir, dementorSpeed * delta);
+        }
+      } else if (dist > 0.9) {
+        dementor.group.position.addScaledVector(toPlayer, dementorSpeed * delta);
+      }
     }
     if (dist < 1.35 && spellManager.shieldTimer <= 0) {
       playerHealth = Math.max(0, playerHealth - 22 * delta);
