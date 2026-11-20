@@ -88,6 +88,31 @@ let playerHealth = 100;
 let score = 0;
 let gameOver = false;
 
+const SHIELD_BLOCK = 18;
+const MELEE_DAMAGE = 18;
+const RANGED_DAMAGE = 10;
+const MELEE_RANGE = 2.2;
+const dementorProjectiles = [];
+
+function applyPlayerDamage(amount) {
+  const blocked = spellManager.shieldTimer > 0 ? SHIELD_BLOCK : 0;
+  const finalDamage = Math.max(0, amount - blocked);
+  if (finalDamage > 0) {
+    playerHealth = Math.max(0, playerHealth - finalDamage);
+  }
+}
+
+function spawnDementorBolt(origin, targetPos) {
+  const dir = targetPos.clone().sub(origin).normalize();
+  const bolt = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x5577cc, transparent: true, opacity: 0.85 })
+  );
+  bolt.position.copy(origin);
+  scene.add(bolt);
+  dementorProjectiles.push({ mesh: bolt, velocity: dir.multiplyScalar(7.5), life: 2.5 });
+}
+
 function spawnWave(wave) {
   const count = 2 + wave;
   const radius = LARGURA / 2 - 2.0;
@@ -97,6 +122,7 @@ function spawnWave(wave) {
     const dementor = new Dementor(texturas, i * 1.7);
     dementor.hp = 2;
     dementor.aiType = aiTypes[i % aiTypes.length];
+    dementor.attackCooldown = 1.2 + i * 0.4;
     dementor.setPosition(Math.cos(angle) * radius, 0.35, Math.sin(angle) * radius);
     dementor.lookAtPoint(conjurerStand.position);
     scene.add(dementor.group);
@@ -351,6 +377,10 @@ function restartGame() {
     scene.remove(d.group);
   }
   dementors.length = 0;
+  for (const b of dementorProjectiles) {
+    scene.remove(b.mesh);
+  }
+  dementorProjectiles.length = 0;
   playerHealth = 100;
   score = 0;
   currentWave = 1;
@@ -420,11 +450,43 @@ function animate() {
         dementor.group.position.addScaledVector(toPlayer, dementorSpeed * delta);
       }
     }
-    if (dist < 1.35 && spellManager.shieldTimer <= 0) {
-      playerHealth = Math.max(0, playerHealth - 22 * delta);
+    dementor.group.position.x = THREE.MathUtils.clamp(dementor.group.position.x, -ROOM_LIMIT, ROOM_LIMIT);
+    dementor.group.position.z = THREE.MathUtils.clamp(dementor.group.position.z, -ROOM_LIMIT, ROOM_LIMIT);
+
+    dementor.attackCooldown = Math.max(0, (dementor.attackCooldown ?? 0) - delta);
+    if (dementor.attackCooldown <= 0) {
+      if (dist <= MELEE_RANGE) {
+        applyPlayerDamage(MELEE_DAMAGE);
+        dementor.attackCooldown = 2.0;
+      } else if (dist < 16) {
+        const boltOrigin = dementor.group.position.clone().add(new THREE.Vector3(0, 0.8, 0));
+        spawnDementorBolt(boltOrigin, conjurerStand.position);
+        dementor.attackCooldown = 2.6;
+      }
     }
+
     dementor.lookAtPoint(conjurerStand.position);
     dementor.update(delta, elapsedTime);
+  }
+
+  for (let i = dementorProjectiles.length - 1; i >= 0; i--) {
+    const b = dementorProjectiles[i];
+    b.life -= delta;
+    b.mesh.position.addScaledVector(b.velocity, delta);
+    if (b.mesh.position.distanceTo(conjurerStand.position) < 0.9) {
+      applyPlayerDamage(RANGED_DAMAGE);
+      scene.remove(b.mesh);
+      dementorProjectiles.splice(i, 1);
+      continue;
+    }
+    if (
+      b.life <= 0 ||
+      Math.abs(b.mesh.position.x) > LARGURA / 2 ||
+      Math.abs(b.mesh.position.z) > LARGURA / 2
+    ) {
+      scene.remove(b.mesh);
+      dementorProjectiles.splice(i, 1);
+    }
   }
 
   if (playerHealth <= 0) {
