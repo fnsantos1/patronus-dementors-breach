@@ -30,19 +30,24 @@ python3 -m http.server 8000
 
 Depois abra <http://localhost:8000>.
 
-## Controles do visualizador
+## Controles do jogo e visualizador
 
-| Tecla | Ação |
+| Tecla / Ação | Descrição |
 |---|---|
-| `1` | câmera em 1ª pessoa (o braço vira filho da câmera) |
+| `W` `A` `S` `D` | movimentar o Conjurador |
+| `Botão Direito` (arrastar) | desenhar magia (`○` Patrono, `△` Feixe, `□` Escudo, `―` Dash) |
+| `Espaço` | carregar aura da varinha |
+| `R` | reiniciar partida (na tela de fim de jogo) |
+| `1` | câmera em 1ª pessoa (padrão) |
 | `2` | câmera em 3ª pessoa, sobre o ombro |
 | `3` | câmera zenital |
 | `0` | câmera livre |
 | `G` | mostrar grade e eixos |
 | `L` | alternar wireframe |
+| `U` | alternar xadrez de UV (conferir mapeamento) |
 | `C` | liga/desliga o candelabro |
 | `5` / `6` / `7` / `8` | liga/desliga a tocha norte / sul / oeste / leste |
-| mouse | orbitar (arrastar) e aproximar (roda) |
+| mouse (botão esquerdo) | girar visão (1ª/3ª pessoa) ou orbitar (câmera livre) |
 
 ## Estrutura
 
@@ -52,7 +57,11 @@ Depois abra <http://localhost:8000>.
 ├── src/
 │   ├── main.js                 # cena, iluminação, câmeras, loop de render
 │   ├── scene/room.js           # a câmara: chão, paredes, teto, colunas, tochas
-│   ├── core/textures.js        # texturas procedurais em <canvas>
+│   ├── core/
+│   │   ├── textures.js         # texturas procedurais e carregamento em assets/
+│   │   ├── particles.js        # sistema de partículas e névoa etérea
+│   │   ├── gestures.js         # reconhecimento de gestos 2D com o mouse
+│   │   └── spells.js           # magias (Patrono, Feixe e Escudo)
 │   └── characters/
 │       ├── conjurer.js         # Conjurador: braço + varinha (6 malhas)
 │       ├── dementor.js         # Dementador: manto + capuz + braços (11 malhas)
@@ -86,6 +95,18 @@ todas à mostra — a cena inteira tem cerca de 450 triângulos.
   - [x] Relatório da entrega: [docs/Entrega3-Relatorio.pdf](docs/Entrega3-Relatorio.pdf)
   - [x] Vídeo da demonstração técnica: [docs/Demonstracao_Entrega_3.mp4](docs/Demonstracao_Entrega_3.mp4)
   - [x] Índice completo de documentação em [docs/README.md](docs/README.md)
+- [x] **Entrega 4** — Texturas e materiais
+  - [x] Múltiplas texturas aplicadas ao cenário (paredes, piso, teto, colunas, móveis) e personagens (varinha, manto dos Dementadores)
+  - [x] Mapeamento UV com modo de inspeção (`U` — xadrez de UV)
+  - [x] Integração com iluminação (mapas de normais e rugosidade reagindo às luzes)
+  - [x] Relatório da entrega: [docs/Entrega4-Relatorio.pdf](docs/Entrega4-Relatorio.pdf)
+- [ ] **Entrega 5** — Jogabilidade, interação e pontuação
+  - [x] Corpo completo do Conjurador, movimentação `WASD`, Dash (`―`) e rotação de câmera
+  - [x] Sistema de magias por gestos com o mouse (`○` Patrono, `△` Feixe, `□` Escudo)
+  - [x] Colisões, IA dos Dementadores (3 padrões + ataques melee/mágico com cooldown) e sistema de ondas
+  - [x] HUD com Vida, Pontuação e Onda, condições de Vitória (3 ondas) / Derrota e reinício (`R`)
+  - [x] Deploy contínuo no GitHub Pages (`.github/workflows/pages.yml`)
+  - [ ] Vídeo da demonstração técnica
 
 ## Texturas
 
