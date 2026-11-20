@@ -365,6 +365,10 @@ function animate() {
     spawnWave(currentWave);
   }
 
+  document.getElementById('vida-atual').textContent = Math.ceil(playerHealth);
+  document.getElementById('pontos-atual').textContent = score;
+  document.getElementById('onda-atual').textContent = currentWave;
+
   if (currentViewKey === 'Digit1') {
     camera.position.set(
       conjurerStand.position.x,
