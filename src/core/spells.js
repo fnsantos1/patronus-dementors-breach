@@ -2,10 +2,11 @@
 import * as THREE from 'three';
 
 export class SpellManager {
-  constructor(scene, conjurerStand, dementors) {
+  constructor(scene, conjurerStand, dementors, onDementorDefeated = null) {
     this.scene = scene;
     this.conjurerStand = conjurerStand;
     this.dementors = dementors;
+    this.onDementorDefeated = onDementorDefeated;
     this.projectiles = [];
     this.beams = [];
     this.shieldTimer = 0;
@@ -80,16 +81,29 @@ export class SpellManager {
 
     this.beams.push({ mesh: beam, life: 0.28 });
 
-    // Empurra dementadores proximos ao raio
-    for (const dementor of this.dementors) {
+    // Empurra e causa dano aos dementadores proximos ao raio
+    for (let i = this.dementors.length - 1; i >= 0; i--) {
+      const dementor = this.dementors[i];
       const toDementor = dementor.group.position.clone().sub(origin);
       const proj = toDementor.dot(dir);
       if (proj > 0 && proj < length) {
         const perpDist = toDementor.sub(dir.clone().multiplyScalar(proj)).length();
         if (perpDist < 1.3) {
           dementor.group.position.addScaledVector(dir, 2.2);
+          this.damageDementor(i, 1);
         }
       }
+    }
+  }
+
+  damageDementor(index, amount) {
+    const dementor = this.dementors[index];
+    if (!dementor) return;
+    dementor.hp = (dementor.hp ?? 2) - amount;
+    if (dementor.hp <= 0) {
+      this.scene.remove(dementor.group);
+      this.dementors.splice(index, 1);
+      if (this.onDementorDefeated) this.onDementorDefeated();
     }
   }
 
@@ -115,14 +129,19 @@ export class SpellManager {
       p.life -= delta;
       p.mesh.position.addScaledVector(p.velocity, delta);
 
-      for (const dementor of this.dementors) {
+      let hit = false;
+      for (let j = this.dementors.length - 1; j >= 0; j--) {
+        const dementor = this.dementors[j];
         if (p.mesh.position.distanceTo(dementor.group.position) < 1.5) {
           const pushDir = p.velocity.clone().setY(0).normalize();
           dementor.group.position.addScaledVector(pushDir, 2.5);
+          this.damageDementor(j, 2);
+          hit = true;
+          break;
         }
       }
 
-      if (p.life <= 0) {
+      if (hit || p.life <= 0) {
         this.scene.remove(p.mesh);
         this.projectiles.splice(i, 1);
       }

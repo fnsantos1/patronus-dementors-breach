@@ -81,18 +81,26 @@ conjurerStand.add(conjurer.rig);
 scene.add(conjurerStand);
 
 // Dementadores (Flyweight com esqueleto anatomico e veu textil)
-const dementors = [
-  new Dementor(texturas, 0.0),
-  new Dementor(texturas, 2.1),
-  new Dementor(texturas, 4.3),
-];
-dementors[0].setPosition(-4.5, 0.3, -4.0);
-dementors[1].setPosition(4.8, 0.5, -3.0);
-dementors[2].setPosition(-5.2, 0.2, 2.6);
-for (const dementor of dementors) {
-  dementor.lookAtPoint(new THREE.Vector3(0, 0, 0));
-  scene.add(dementor.group);
+const dementors = [];
+let currentWave = 1;
+let playerHealth = 100;
+let score = 0;
+
+function spawnWave(wave) {
+  const count = 2 + wave;
+  const radius = LARGURA / 2 - 1.5;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + wave * 0.6;
+    const dementor = new Dementor(texturas, i * 1.7);
+    dementor.hp = 2;
+    dementor.setPosition(Math.cos(angle) * radius, 0.35, Math.sin(angle) * radius);
+    dementor.lookAtPoint(conjurerStand.position);
+    scene.add(dementor.group);
+    dementors.push(dementor);
+  }
 }
+
+spawnWave(currentWave);
 
 // O Patrono (Modo Inspecao: visivel para avaliacao estrutural)
 const patronus = new Patronus(particleTexture);
@@ -101,7 +109,9 @@ patronus.group.rotation.y = 2.4;
 scene.add(patronus.group);
 
 // Sistema de magias e reconhecimento de gestos (Circulo, Triangulo, Quadrado)
-const spellManager = new SpellManager(scene, conjurerStand, dementors);
+const spellManager = new SpellManager(scene, conjurerStand, dementors, () => {
+  score += 100;
+});
 new GestureRecognizer(
   (shape) => {
     const origin = conjurer.getTipPosition();
@@ -330,8 +340,29 @@ function animate() {
   spellManager.update(delta);
   patronus.update(delta, camera);
   const elapsedTime = clock.getElapsedTime();
+  const dementorSpeed = 1.0 + currentWave * 0.15;
   for (const dementor of dementors) {
+    const toPlayer = new THREE.Vector3(
+      conjurerStand.position.x - dementor.group.position.x,
+      0,
+      conjurerStand.position.z - dementor.group.position.z
+    );
+    const dist = toPlayer.length();
+    if (dist > 0.9) {
+      toPlayer.normalize();
+      dementor.group.position.addScaledVector(toPlayer, dementorSpeed * delta);
+    }
+    if (dist < 1.35 && spellManager.shieldTimer <= 0) {
+      playerHealth = Math.max(0, playerHealth - 22 * delta);
+    }
+    dementor.lookAtPoint(conjurerStand.position);
     dementor.update(delta, elapsedTime);
+  }
+
+  if (dementors.length === 0) {
+    score += 250;
+    currentWave += 1;
+    spawnWave(currentWave);
   }
 
   if (currentViewKey === 'Digit1') {
