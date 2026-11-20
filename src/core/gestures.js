@@ -44,11 +44,11 @@ export class GestureRecognizer {
     window.addEventListener('pointerup', (e) => {
       if (e.button === 2 && this.isDrawing) {
         this.isDrawing = false;
-        const shape = this.recognize(this.points);
+        const result = this.recognize(this.points);
         this.clear();
         if (this.onEnd) this.onEnd();
-        if (shape && this.onRecognize) {
-          this.onRecognize(shape);
+        if (result && this.onRecognize) {
+          this.onRecognize(result.shape, result.center);
         }
       }
     });
@@ -105,30 +105,32 @@ export class GestureRecognizer {
     const height = maxY - minY;
     if (Math.max(width, height) < 40 || totalLen < 80) return null;
 
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const center = { x: cx, y: cy };
+
     // 0. Checa linha reta (Dash): distancia ponta-a-ponta proxima do comprimento total
     const start = pts[0];
     const end = pts[pts.length - 1];
     const directDist = Math.hypot(end.x - start.x, end.y - start.y);
     if (directDist / totalLen > 0.88) {
-      return 'line';
+      return { shape: 'line', center };
     }
 
     // 1. Checa circularidade (variancia da distancia ao centroide)
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
     const radii = pts.map((p) => Math.hypot(p.x - cx, p.y - cy));
     const avgR = radii.reduce((a, b) => a + b, 0) / radii.length;
     const variance = radii.reduce((a, r) => a + Math.abs(r - avgR), 0) / radii.length;
     const circularityError = variance / (avgR || 1);
 
     if (circularityError < 0.16) {
-      return 'circle';
+      return { shape: 'circle', center };
     }
 
     // 2. Conta cantos significativos (mudanca de direcao > 45 graus)
     const corners = this.countCorners(pts, Math.max(width, height) * 0.12);
-    if (corners <= 3) return 'triangle';
-    if (corners >= 4) return 'square';
+    if (corners <= 3) return { shape: 'triangle', center };
+    if (corners >= 4) return { shape: 'square', center };
 
     return null;
   }

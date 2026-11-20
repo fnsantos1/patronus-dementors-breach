@@ -82,9 +82,11 @@ scene.add(conjurerStand);
 
 // Dementadores (Flyweight com esqueleto anatomico e veu textil)
 const dementors = [];
+const MAX_WAVES = 3;
 let currentWave = 1;
 let playerHealth = 100;
 let score = 0;
+let gameOver = false;
 
 function spawnWave(wave) {
   const count = 2 + wave;
@@ -138,15 +140,17 @@ function moveConjurer(deltaVec) {
 const spellManager = new SpellManager(scene, conjurerStand, dementors, () => {
   score += 100;
 });
+const raycaster = new THREE.Raycaster();
 new GestureRecognizer(
-  (shape) => {
-    const dir = new THREE.Vector3(0, 0, -1).applyAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      conjurerStand.rotation.y
+  (shape, center) => {
+    if (gameOver) return;
+    const ndc = new THREE.Vector2(
+      (center.x / window.innerWidth) * 2 - 1,
+      -(center.y / window.innerHeight) * 2 + 1
     );
-    if (currentViewKey === 'Digit1') {
-      camera.getWorldDirection(dir);
-    }
+    raycaster.setFromCamera(ndc, camera);
+    const dir = raycaster.ray.direction.clone().normalize();
+
     if (shape === 'line') {
       const dashVec = dir.clone().setY(0).normalize().multiplyScalar(3.5);
       moveConjurer(dashVec);
@@ -270,6 +274,9 @@ window.addEventListener('keydown', (event) => {
   if (lightSwitches[event.code] && !event.repeat) toggleLight(lightSwitches[event.code]);
   if (event.code === 'KeyG') helpers.visible = !helpers.visible;
 
+  if (event.code === 'KeyR' && gameOver) {
+    restartGame();
+  }
   if (event.code === 'Space') {
     isCharging = true;
   }
@@ -301,6 +308,9 @@ window.addEventListener('keydown', (event) => {
 
 window.addEventListener('keyup', (event) => {
   if (event.code in moveKeys) moveKeys[event.code] = false;
+  if (event.code === 'KeyR' && gameOver) {
+    restartGame();
+  }
   if (event.code === 'Space') {
     isCharging = false;
   }
@@ -322,10 +332,43 @@ window.addEventListener('resize', () => {
 
 window.app = { scene, camera, renderer, conjurer, dementors, patronus, room };
 
+const endScreen = document.getElementById('end-screen');
+const endTitle = document.getElementById('end-title');
+const endScore = document.getElementById('end-score');
+document.getElementById('restart-btn').addEventListener('click', restartGame);
+
+function endGame(victory) {
+  gameOver = true;
+  endTitle.textContent = victory
+    ? 'Vitória! Você repeliu os Dementadores!'
+    : 'Derrota — Os Dementadores venceram';
+  endScore.textContent = `Pontuação final: ${score}`;
+  endScreen.style.display = 'flex';
+}
+
+function restartGame() {
+  for (const d of dementors) {
+    scene.remove(d.group);
+  }
+  dementors.length = 0;
+  playerHealth = 100;
+  score = 0;
+  currentWave = 1;
+  gameOver = false;
+  conjurerStand.position.set(0, 1.55, 0.6);
+  endScreen.style.display = 'none';
+  spawnWave(currentWave);
+}
+
 const clock = new THREE.Clock();
 
 function animate() {
   const delta = Math.min(clock.getDelta(), 0.1);
+  if (gameOver) {
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+    return;
+  }
 
   // Dinamica de Carga Magica ao segurar Espaco
   if (isCharging) {
@@ -384,10 +427,16 @@ function animate() {
     dementor.update(delta, elapsedTime);
   }
 
-  if (dementors.length === 0) {
+  if (playerHealth <= 0) {
+    endGame(false);
+  } else if (dementors.length === 0) {
     score += 250;
-    currentWave += 1;
-    spawnWave(currentWave);
+    if (currentWave >= MAX_WAVES) {
+      endGame(true);
+    } else {
+      currentWave += 1;
+      spawnWave(currentWave);
+    }
   }
 
   document.getElementById('vida-atual').textContent = Math.ceil(playerHealth);
